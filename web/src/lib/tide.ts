@@ -30,6 +30,9 @@ export type TideApi = {
 
 const MOCK_PREFIX = 'MOCK-CIPHERTEXT-'
 const selfDecryptRole = (tag: string) => `_tide_${tag}.selfdecrypt`
+// UTF-8 safe base64 (records contain '→', which plain btoa rejects).
+const b64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(s)))
+const unb64 = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)))
 const mockRoles = () => findUser(getDemoUser())?.roles ?? []
 
 async function mockDecrypt(items: DecryptItem[]): Promise<string[]> {
@@ -47,7 +50,7 @@ async function mockDecrypt(items: DecryptItem[]): Promise<string[]> {
     const id = records.items.find((r) => r.ciphertext === encrypted)?.id
     const rec = plain.items.find((r) => r.id === id)
     if (rec) return JSON.stringify(rec)
-    if (encrypted.startsWith(MOCK_PREFIX + 'b64:')) return atob(encrypted.slice(MOCK_PREFIX.length + 4))
+    if (encrypted.startsWith(MOCK_PREFIX + 'b64:')) return unb64(encrypted.slice(MOCK_PREFIX.length + 4))
     throw new Error('decrypt_error: unknown mock ciphertext')
   })
 }
@@ -61,7 +64,7 @@ function useMockTide(): TideApi {
     logout: async () => {},
     getToken: async () => null,
     hasRealmRole: (role) => mockRoles().includes(role),
-    doEncrypt: async (items) => items.map((i) => MOCK_PREFIX + 'b64:' + btoa(i.data)),
+    doEncrypt: async (items) => items.map((i) => MOCK_PREFIX + 'b64:' + b64(i.data)),
     doDecrypt: mockDecrypt,
   }
 }

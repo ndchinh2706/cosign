@@ -43,6 +43,7 @@ const MOCKS: MockEntry[] = [
   { method: 'POST', pattern: p('/requests/:id/approve'), file: ['request-approve.json', 'request-approve-2.json'] },
   { method: 'POST', pattern: p('/requests/:id/deny'), file: 'request-deny.json' },
   { method: 'GET', pattern: p('/records'), file: 'records.json' },
+  { method: 'POST', pattern: p('/records/bulk'), status: 201 }, // no mock file; 201 {count} in live mode
   { method: 'POST', pattern: p('/scan'), file: 'scan.json' },
   { method: 'GET', pattern: p('/admin/users'), file: 'admin-users.json' },
   { method: 'PUT', pattern: p('/admin/users/:u/roles'), file: 'admin-roles-put.json', status: 202 },
