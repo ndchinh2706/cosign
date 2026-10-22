@@ -9,15 +9,11 @@ Hạn nộp: **18:00 22/10/2026** (giờ VN). Tài liệu này là board thực 
 - Việc của tôi: `gh issue list --assignee @me --milestone "Submission 22/10 18:00"`
 - Việc P0 còn mở: `gh issue list -l priority:P0 --state open`
 
-GitHub Project (kanban Todo / In progress / Review / Done) **chưa tạo được** vì token `gh` thiếu scope `project`. Nếu muốn có kanban, Chính chạy `gh auth refresh -s project,read:project` rồi:
+**Kanban: https://github.com/users/ndchinh2706/projects/1** (project "Cosign", đã gắn repo, đủ 28 issue). Cột Status: Todo → In Progress → Blocked → Review → Done.
 
-```
-gh project create --owner ndchinh2706 --title Cosign
-gh project link <number> --repo ndchinh2706/cosign
-gh issue list -R ndchinh2706/cosign --limit 50 --json url -q '.[].url' | xargs -n1 gh project item-add <number> --owner ndchinh2706 --url
-```
-
-Link sẽ có dạng `https://github.com/users/ndchinh2706/projects/<number>`. Không có project thì dùng label + milestone như dưới là đủ cho 2 người.
+- Mở project, bấm "+ New view" → Board, nhóm theo Status (GitHub chưa cho tạo view board qua API, làm tay 10 giây).
+- Kéo thẻ khi đổi trạng thái; đồng thời giữ label `status:*` cho người xem từ issue list. Issue đóng hoặc PR merge thì GitHub tự chuyển Done.
+- Issue mới tạo: thêm vào project bằng ô Projects bên phải issue (hoặc bật Workflows → Auto-add trong settings project).
 
 ## 2. Phân công
 
