@@ -20,5 +20,7 @@ Prototype cho Challenge 2 "UNLOCKED" (RMIT hackathon × Tide). Cosign cho AI age
 
 ## Cách làm việc
 - Một issue một branch (tên ghi trong issue), PR nhỏ, body `Closes #n`, label `status:review`.
-- Trước khi mở PR: backend chạy `pytest`; frontend chạy `npm run build`.
-- Tài liệu viết tiếng Việt, identifier và copy giao diện tiếng Anh. Không dùng checkbox markdown.
+- Trước khi mở PR: backend `cd api && .venv/bin/python -m pytest -q`; frontend `cd web && npm run lint && npm run build`.
+- Backend thay mock bằng logic thật: định nghĩa handler trên router trước `mount_mocks`, mock cùng method+path tự bỏ qua.
+- Python local dùng 3.12 (`api/.venv`); Python 3.14 Homebrew trên máy Chính bị lỗi.
+- Tài liệu nội bộ (`docs/`) viết tiếng Việt; `README.md` viết tiếng Anh cho giám khảo; identifier và copy giao diện tiếng Anh. Không dùng checkbox markdown.
