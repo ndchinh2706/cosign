@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { loadMock } from './api'
 import { API_MODE, TIDE_MODE, WS_URL } from './config'
 import { getDemoUser } from './users'
@@ -21,7 +21,6 @@ type Status = 'idle' | 'connecting' | 'open' | 'closed'
 export type SocketOptions = {
   console?: boolean
   getToken?: () => Promise<string | null> // live Tide mode
-  replayIntervalMs?: number // mock mode autoplay speed
 }
 
 const envelope = (type: string, payload: Record<string, unknown>): Envelope => ({
@@ -35,7 +34,7 @@ const envelope = (type: string, payload: Record<string, unknown>): Envelope => (
 
 /**
  * live: one WS per tab, `auth` first (docs/API.md §6), then subscribe.
- * mock: replays docs/mocks/ws/storyboard.json in array order (not by ts); every event is delivered.
+ * mock: subscribes to the shared storyboard replay below (array order, not by ts); every event is delivered.
  */
 export function useCosignSocket(channels: string[], opts: SocketOptions = {}) {
   const handlers = useRef(new Map<string, Set<Handler>>())
@@ -43,7 +42,7 @@ export function useCosignSocket(channels: string[], opts: SocketOptions = {}) {
   const [status, setStatus] = useState<Status>('idle')
   const [lastEvent, setLastEvent] = useState<Envelope | null>(null)
   const channelKey = channels.join(',')
-  const { console: isConsole = false, getToken, replayIntervalMs = 1500 } = opts
+  const { console: isConsole = false, getToken } = opts
 
   const dispatch = useCallback((e: Envelope) => {
     setLastEvent(e)
@@ -103,47 +102,83 @@ export function useCosignSocket(channels: string[], opts: SocketOptions = {}) {
     }
   }, [channelKey, isConsole, getToken, dispatch])
 
-  // mock replay
-  const story = useRef<Envelope[]>([])
-  const [total, setTotal] = useState(0)
-  const [index, setIndex] = useState(0)
-  const [playing, setPlaying] = useState(false)
-
+  // mock: every hook in the tab listens to the one shared replay
   useEffect(() => {
     if (API_MODE !== 'mock') return
-    loadMock<Envelope[]>('ws/storyboard.json').then((events) => {
-      story.current = events
-      setTotal(events.length)
-      setStatus('open')
-    })
-  }, [])
-
-  const step = useCallback(() => {
-    setIndex((i) => {
-      const e = story.current[i]
-      if (e) dispatch(e)
-      return e ? i + 1 : i
-    })
+    void loadStory()
+    sinks.add(dispatch)
+    return () => {
+      sinks.delete(dispatch)
+    }
   }, [dispatch])
 
-  useEffect(() => {
-    if (API_MODE !== 'mock' || !playing) return
-    const t = setInterval(step, replayIntervalMs)
-    return () => clearInterval(t)
-  }, [playing, step, replayIntervalMs])
+  return { status: API_MODE === 'mock' ? 'open' : status, on, send, lastEvent }
+}
 
-  const replay = {
-    index,
-    total,
-    playing,
-    play: () => setPlaying(true),
-    pause: () => setPlaying(false),
-    step,
+// Mock replay of docs/mocks/ws/storyboard.json, shared per tab and driven from RoleSwitcher.
+// ponytail: ignores channels, so every hook sees every event; filter by channel if a screen double-counts.
+const REPLAY_MS = 1000
+const story = { events: [] as Envelope[], index: 0, mode: null as 'beat' | 'all' | null, timer: undefined as ReturnType<typeof setInterval> | undefined }
+const sinks = new Set<Handler>()
+const replayListeners = new Set<() => void>()
+let loading: Promise<void> | null = null
+let snap = { index: 0, total: 0, beat: null as string | null, playing: false }
+
+const loadStory = () =>
+  (loading ??= loadMock<Envelope[]>('ws/storyboard.json').then((events) => {
+    story.events = events
+    emit()
+  }))
+
+function emit() {
+  const { events, index, mode } = story
+  snap = { index, total: events.length, beat: events[index]?.beat ?? null, playing: mode !== null }
+  replayListeners.forEach((l) => l())
+}
+
+function stop() {
+  clearInterval(story.timer)
+  story.mode = null
+  emit()
+}
+
+function tick() {
+  const e = story.events[story.index]
+  if (!e) return stop()
+  story.index++
+  sinks.forEach((s) => s(e))
+  const next = story.events[story.index]
+  if (!next || (story.mode === 'beat' && next.beat !== e.beat)) stop()
+  else emit()
+}
+
+function start(mode: 'beat' | 'all') {
+  clearInterval(story.timer)
+  story.mode = mode
+  tick()
+  if (story.mode) story.timer = setInterval(tick, REPLAY_MS)
+}
+
+const subscribeReplay = (l: () => void) => {
+  replayListeners.add(l)
+  return () => {
+    replayListeners.delete(l)
+  }
+}
+
+export function useReplay() {
+  const s = useSyncExternalStore(subscribeReplay, () => snap, () => snap)
+  useEffect(() => {
+    if (API_MODE === 'mock') void loadStory()
+  }, [])
+  return {
+    ...s,
+    play: () => start('all'),
+    nextBeat: () => start('beat'),
+    pause: stop,
     reset: () => {
-      setPlaying(false)
-      setIndex(0)
+      story.index = 0
+      stop()
     },
   }
-
-  return { status, on, send, lastEvent, replay }
 }
