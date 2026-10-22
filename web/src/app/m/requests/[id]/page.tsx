@@ -46,7 +46,7 @@ export default function MobileApproval({ params }: { params: Promise<{ id: strin
       <main data-screen="E5" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, padding: 30, textAlign: 'center' }}>
         <QuorumSeal required={cr.quorum.required} approvals={cr.quorum.signed_by} size={200} />
         <h1 style={{ fontSize: 26, color: failed ? 'var(--refused)' : 'var(--ok)' }}>Signed · {cr.quorum.signed_by.length} of {cr.quorum.required}</h1>
-        <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{failed ? 'Quorum reached, but Tide did not apply the role. No access was granted.' : cr.status === 'approved' ? 'Quorum reached. Access is granted for the approved window only.' : `Waiting for ${cr.quorum.required - cr.quorum.signed_by.length} more approver. Atlas gets nothing until the quorum is complete.`}</p>
+        <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{failed ? 'Quorum reached, but Tide did not apply the role. No access was granted.' : cr.apply_status === 'awaiting_signature' ? 'Quorum reached. Waiting for a Tide admin to sign; Atlas gets nothing until Tide applies the role.' : cr.status === 'approved' ? 'Quorum reached. Access is granted for the approved window only.' : `Waiting for ${cr.quorum.required - cr.quorum.signed_by.length} more approver. Atlas gets nothing until the quorum is complete.`}</p>
         <Link className="btn" style={{ height: 46, padding: '0 26px', fontSize: 16 }} href="/incidents">Done</Link>
       </main>
     )

@@ -55,7 +55,7 @@ export function RequestReview({ cr, onChange, security, children }: { cr: Change
   const forbidden = agentNeverHolds(cr)
   const signed = cr.quorum.signed_by
   const n = signed.length
-  const progress = cr.apply_status === 'failed' ? 'Quorum reached · Tide did not apply the role' : cr.status === 'approved' ? `Quorum reached · ${n} of ${cr.quorum.required}` : cr.status === 'pending' ? `${n} of ${cr.quorum.required} approvals${n ? ` · waiting for ${cr.quorum.required - n} more` : ''}` : cr.status
+  const progress = cr.apply_status === 'failed' ? 'Quorum reached · Tide did not apply the role' : cr.apply_status === 'awaiting_signature' ? 'Quorum reached · waiting for a Tide admin to sign the change request' : cr.status === 'approved' ? `Quorum reached · ${n} of ${cr.quorum.required}` : cr.status === 'pending' ? `${n} of ${cr.quorum.required} approvals${n ? ` · waiting for ${cr.quorum.required - n} more` : ''}` : cr.status
   const deny = async (quarantine = false) => {
     try {
       onChange(await denyRequest(cr, { reason: 'Denied in review', quarantine_agent_context: quarantine }))
@@ -198,7 +198,8 @@ export function SignModal({ cr, onClose, onSigned }: { cr: ChangeRequest; onClos
               </div>
             )}
             {result?.apply_status === 'failed' && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--refused)' }}>Quorum reached, but Tide did not apply the role. No access was granted.</div>}
-            {result && result.apply_status !== 'failed' && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ok)' }}>{result.status === 'approved' ? `Quorum reached · ${done} of ${result.quorum.required} approvals` : `${done} of ${result.quorum.required} approvals · waiting for ${result.quorum.required - done} more`}</div>}
+            {result?.apply_status === 'awaiting_signature' && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--pending)' }}>Quorum reached · waiting for a Tide admin to sign the change request. No access until Tide applies it.</div>}
+            {result && result.apply_status !== 'failed' && result.apply_status !== 'awaiting_signature' && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ok)' }}>{result.status === 'approved' ? `Quorum reached · ${done} of ${result.quorum.required} approvals` : `${done} of ${result.quorum.required} approvals · waiting for ${result.quorum.required - done} more`}</div>}
           </div>
         </div>
         <div style={{ padding: '16px 26px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10, background: 'var(--surface-2)' }}>

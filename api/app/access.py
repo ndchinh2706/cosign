@@ -15,6 +15,7 @@ from .audit_log import append_audit
 from .auth import SEED_USERS, User
 from .clock import iso, now, parse
 from .errors import ApiError
+from .governance import TideAwaitingSignature
 from .policy import CAPABILITY_ROLES, Policy, UnknownCapability
 
 REQUEST_CHANNELS = ["role:oncall", "role:security-lead", "role:platform-admin"]
@@ -22,6 +23,8 @@ AUTHORITY_CAPS = ["services.restart", "deploy.rollback", "logs.read", "customer_
                   "roles.grant", "secrets.rotate"]
 GROUPS = [("approval", "Needs your approval"), ("agent", "Agent activity"), ("security", "Security")]
 ORK = "14/20"
+TIDE_POLL_S = 2
+TIDE_WAIT_S = 30 * 60
 BLAST_RADIUS = {"customer_records": 48201, "could": ["read all customer records", "grant roles", "export data"]}
 
 
@@ -482,14 +485,17 @@ class AccessService:
                 self.gov.apply(r["tide_cr_id"], r["target_user"], roles, [], expires)
                 apply_status = "applied"
                 tide_ids = ",".join(getattr(self.gov, "last_change_request_ids", [])) or None
+            except TideAwaitingSignature as exc:
+                apply_status, tide_ids, expires = "awaiting_signature", ",".join(exc.change_request_ids), None
             except ApiError as exc:
                 apply_status, apply_error, expires = "failed", exc.message, None
+        waiting = apply_status == "awaiting_signature"
         sig = signed[-1]["signature"] if signed else None
         ts = iso(granted)
         self.db.execute(
             "UPDATE access_requests SET status='approved', decided_at=?, granted_at=?, expires_at=?, signature=?,"
             " duration_min=?, apply_status=?, tide_change_request_id=? WHERE id=?",
-            (ts, None if apply_error else ts, expires, f"{sig} ({ORK} ORK)" if sig else None, duration,
+            (ts, None if apply_error or waiting else ts, expires, f"{sig} ({ORK} ORK)" if sig else None, duration,
              apply_status, tide_ids, r["id"]))
         self.db.commit()
         r = self.row(r["id"])
@@ -500,18 +506,58 @@ class AccessService:
                           payload={"tier": r["tier"], "roles": roles, "expires_at": expires, "apply_status": apply_status,
                                    "tide_change_request_id": tide_ids, "apply_error": apply_error},
                           signers=signers)
+        if waiting:
+            asyncio.get_running_loop().create_task(self._await_tide(r["id"], roles))
+            await self._publish_request(r, "request.updated")
+            return self.view(r)
+        return await self._announce(r, sig, ts, expires, granted=not apply_error)
+
+    async def _announce(self, r: sqlite3.Row, sig: str | None, ts: str, expires: str | None, granted: bool) -> dict:
         full = self.view(r)
-        if not apply_error:
+        if granted:
             await self._publish_request(r, "request.approved", {
                 "id": r["id"], "signature": sig, "ork_nodes": ORK, "signed_by": full["quorum"]["signed_by"],
                 "granted_at": ts, "expires_at": expires, "capability": r["capability"],
                 "target_user": r["target_user"]})
         await self._publish_request(r, "request.updated", full)
         await self._publish_authority(r["target_user"], r["capability"], refresh=True)
-        if r["requester_type"] == "agent" and not apply_error:
+        if r["requester_type"] == "agent" and granted:
             await self._notify([r["requester"]], "agent", f"Request {r['id']} approved",
                                f"{r['capability']} granted" + (f" until {expires}" if expires else ""), r)
         return full
+
+    async def _await_tide(self, id_: str, roles: list[str]) -> None:
+        """Quorum met in Cosign; Tide holds the role until a tide-realm-admin signs the change request.
+        The grant window starts when the role actually lands.
+        ponytail: in-process task, a restart drops the wait; re-approving is the recovery path."""
+        deadline = asyncio.get_running_loop().time() + TIDE_WAIT_S
+        r = self.row(id_)
+        while asyncio.get_running_loop().time() < deadline:
+            await asyncio.sleep(TIDE_POLL_S)
+            try:
+                if await asyncio.to_thread(self.gov.roles_present, r["target_user"], roles):
+                    break
+            except ApiError:
+                continue
+        else:
+            self.db.execute("UPDATE access_requests SET apply_status='failed' WHERE id=?", (id_,))
+            self.db.commit()
+            await self._publish_request(self.row(id_), "request.updated")
+            return
+        granted = now()
+        expires = iso(granted + timedelta(minutes=r["duration_min"])) if r["duration_min"] else None
+        self.gov.commit_grant(r["tide_cr_id"], r["target_user"], roles, expires)
+        self.db.execute("UPDATE access_requests SET apply_status='applied', granted_at=?, expires_at=? WHERE id=?",
+                        (iso(granted), expires, id_))
+        self.db.commit()
+        r = self.row(id_)
+        await self._audit(actor="tide", actor_type="system", action="request.applied",
+                          target=f"{r['capability']}:{r['target_user']}", outcome="signed",
+                          incident_id=r["incident_id"], request_id=id_,
+                          payload={"roles": roles, "expires_at": expires,
+                                   "tide_change_request_id": r["tide_change_request_id"]})
+        sig = (r["signature"] or "").removesuffix(f" ({ORK} ORK)") or None
+        await self._announce(r, sig, iso(granted), expires, granted=True)
 
     async def deny(self, user: User, id_: str, body: DenyBody) -> dict:
         r = self.row(id_)

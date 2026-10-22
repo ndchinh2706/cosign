@@ -1469,8 +1469,8 @@ components:
         tide_cr_id: { type: [string, "null"] }
         apply_status:
           type: string
-          enum: [applied, failed]
-          description: Chỉ có khi request đã qua bước áp dụng role (quorum đủ). `failed` = Tide lỗi, request vẫn `approved` nhưng role chưa vào.
+          enum: [applied, failed, awaiting_signature]
+          description: Chỉ có khi request đã qua bước áp dụng role (quorum đủ). `failed` = Tide lỗi, request vẫn `approved` nhưng role chưa vào. `awaiting_signature` = realm Tide đã sang multiAdmin, change request chờ một tide-realm-admin ký trong admin console; khi role vào, chuyển sang `applied` (phát `request.approved`).
         tide_change_request_id:
           type: [string, "null"]
           description: Id change request của TideCloak đã duyệt (GovernanceMode real), nhiều id nối bằng dấu phẩy.

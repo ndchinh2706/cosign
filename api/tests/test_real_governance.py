@@ -5,15 +5,15 @@ import pytest
 
 from app.config import Settings
 from app.errors import ApiError
-from app.governance import RealTideGovernance
+from app.governance import RealTideGovernance, TideAwaitingSignature
 
 ROLE = "_tide_customer_pii.selfdecrypt"
 UID, RID = "u-1", "r-1"
 
 
 class FakeTide:
-    def __init__(self, fail_token=False):
-        self.assigned, self.crs, self.fail_token = set(), {}, fail_token
+    def __init__(self, fail_token=False, multi_admin=False):
+        self.assigned, self.crs, self.fail_token, self.multi_admin = set(), {}, fail_token, multi_admin
 
     def _cr(self, action, uid, rid):
         id_ = f"cr-{len(self.crs) + 1}"
@@ -42,6 +42,8 @@ class FakeTide:
             return httpx.Response(200, json=[c for c in self.crs.values() if c["status"] == "PENDING"])
         if p.startswith("iga/change-requests/") and p.endswith("/approve"):
             cr = self.crs[p.split("/")[2]]
+            if self.multi_admin:  # Tide realm after the firstAdmin flip: an admin must sign in the enclave
+                return httpx.Response(200, json={"mode": "needs-approval", "changeRequestId": cr["id"]})
             cr["status"] = "APPROVED"
             if cr["entityId"] == UID:
                 (self.assigned.add if cr["actionType"] == "GRANT_ROLES" else self.assigned.discard)(ROLE)
@@ -101,3 +103,41 @@ def test_failed_apply_keeps_request_approved(client):
     body = r.json()
     assert body["status"] == "approved" and body["apply_status"] == "failed"
     assert ROLE not in gov.user_roles("ai-oncall-agent")
+
+
+def test_multi_admin_realm_waits_for_signature_then_commits():
+    tide = FakeTide(multi_admin=True)
+    g = make(tide)
+    with pytest.raises(TideAwaitingSignature) as e:
+        g.apply("cr-x", "linh.tran", [ROLE], [], None)
+    assert e.value.change_request_ids == ["cr-2"]
+    assert ROLE not in g.user_roles("linh.tran") and not g.roles_present("linh.tran", [ROLE])
+    tide.assigned.add(ROLE)  # admin signed in the TideCloak console
+    assert g.roles_present("linh.tran", [ROLE])
+    g.commit_grant("cr-x", "linh.tran", [ROLE])
+    assert ROLE in g.user_roles("linh.tran")
+    g.revoke_role("linh.tran", [ROLE])  # Cosign drops it at once; the Tide revoke CR waits for a signature
+    assert ROLE not in g.user_roles("linh.tran")
+
+
+def test_request_waits_for_tide_signature_before_granting(client, monkeypatch):
+    import time
+    from app import access
+    monkeypatch.setattr(access, "TIDE_POLL_S", 0.02)
+    old = client.app.state.governance
+    tide = FakeTide(multi_admin=True)
+    gov = make(tide)
+    gov._crs = old._crs
+    client.app.state.governance = gov
+    client.post("/api/v1/requests/CR-0192/approve", headers={"X-Demo-User": "linh.tran"})
+    body = client.post("/api/v1/requests/CR-0192/approve", headers={"X-Demo-User": "marcus.lee"}).json()
+    assert body["status"] == "approved" and body["apply_status"] == "awaiting_signature"
+    assert ROLE not in gov.user_roles("ai-oncall-agent")
+    tide.assigned.add(ROLE)  # admin signs in the TideCloak console
+    for _ in range(100):
+        body = client.get("/api/v1/requests/CR-0192", headers={"X-Demo-User": "marcus.lee"}).json()
+        if body.get("apply_status") == "applied":
+            break
+        time.sleep(0.02)
+    assert body["apply_status"] == "applied" and body["expires_at"]
+    assert ROLE in gov.user_roles("ai-oncall-agent")
