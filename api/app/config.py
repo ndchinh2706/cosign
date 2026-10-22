@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     tidecloak_realm: str = "cosign"
     jwks_url: str = ""
     jwt_issuer: str = ""
+    tide_admin_user: str = "admin"
+    tide_admin_password: str = ""
+    tide_admin_realm: str = "master"
+    tide_admin_client_id: str = "admin-cli"
+    governance_fallback_mock: bool = False
     tidecloak_client_id: str = "cosign-web"
     jwt_verify_aud: bool = True
 

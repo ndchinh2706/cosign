@@ -1467,6 +1467,13 @@ components:
         incident_id: { type: [string, "null"] }
         run_id: { type: [string, "null"] }
         tide_cr_id: { type: [string, "null"] }
+        apply_status:
+          type: string
+          enum: [applied, failed]
+          description: Chỉ có khi request đã qua bước áp dụng role (quorum đủ). `failed` = Tide lỗi, request vẫn `approved` nhưng role chưa vào.
+        tide_change_request_id:
+          type: [string, "null"]
+          description: Id change request của TideCloak đã duyệt (GovernanceMode real), nhiều id nối bằng dấu phẩy.
         signature: { type: [string, "null"] }
         created_at: { type: string, format: date-time }
         decided_at: { type: [string, "null"], format: date-time }

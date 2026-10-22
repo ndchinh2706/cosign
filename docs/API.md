@@ -63,6 +63,9 @@ Nguyên tắc cứng:
 | `JWT_VERIFY_AUD` | `true` | `false` để bỏ kiểm aud/azp nếu token Tide không set |
 | `AUTH_MODE` | `tide` | `tide` = verify JWT thật; `dev` = chấp nhận header `X-Demo-User: linh.tran` (chỉ để frontend/backend dev song song, tắt khi demo) |
 | `GOVERNANCE_MODE` | `mock` | `real` = gọi TideCloak change request; `mock` = FastAPI mô phỏng |
+| `GOVERNANCE_FALLBACK_MOCK` | `false` | `true` = khi gọi Tide lỗi thì rơi về mock (dùng khi quay video) |
+| `TIDE_ADMIN_USER` / `TIDE_ADMIN_PASSWORD` | `admin` / (trống) | admin của TideCloak dùng cho bản `real` (password grant, client `admin-cli`) |
+| `TIDE_ADMIN_REALM` | `master` | realm cấp token admin |
 | `SCAN_MODE` | `heuristic` | `model` = model C1 đã train; `heuristic` = regex đa ngôn ngữ |
 | `ANTHROPIC_API_KEY` | | agent loop; nếu trống → `AGENT_MODE=scripted` |
 | `AGENT_MODE` | `llm` | `llm` hoặc `scripted` (chạy kịch bản A1→A6 cố định, dùng cho quay video nếu LLM không ổn định) |
@@ -771,6 +774,14 @@ class TideGovernance(Protocol):
 |---|---|---|
 | `MockTideGovernance` | in-memory + SQLite; sinh `sig:` giả, `ork_nodes` "14/20"; `signing.progress` phát 5 tick | làm trước, dùng cho frontend + fallback video |
 | `RealTideGovernance` | `propose`: gọi admin REST của TideCloak (Keycloak-compatible `POST /admin/realms/cosign/users/{id}/role-mappings/realm`) và TideCloak biến thành change request — **CẦN KIỂM CHỨNG** qua spike Raziel MCP (issue #1). `approve`: **CẦN KIỂM CHỨNG** có API không; nếu phải bấm trong admin console thì E4 mở popup admin console đúng CR, FastAPI poll `status()` mỗi 2s. `revoke_role`: `DELETE role-mappings` — **CẦN KIỂM CHỨNG** có cần quorum không. | spike đầu giờ |
+
+`RealTideGovernance` (#15, theo `docs/SPIKE-1-quorum.md`) là bản hybrid: quorum 2/3 và tier vẫn do Cosign tính; Cosign giữ view quyền riêng (như mock, ghi `role_grants`). Khi đủ quorum:
+
+- `apply`: lấy admin token (`TIDE_ADMIN_*`), tìm user id (`GET users?username=&exact=true`), `GET roles/{name}`, `POST users/{id}/role-mappings/realm` (204, mới chỉ tạo CR `GRANT_ROLES` PENDING), `GET iga/change-requests?status=PENDING`, khớp `actionType` + `entityId` (user id) + `rows[].ROLE_ID`, `POST iga/change-requests/{id}/approve`, rồi `GET role-mappings/realm` để kiểm role đã vào. Id CR đã duyệt ghi vào `access_requests.tide_change_request_id`, audit `payload.tide_change_request_id` và field `tide_change_request_id` của request.
+- `revoke_role` (instant revoke, expire): Cosign thu quyền ngay ở view của mình, rồi `DELETE role-mappings` + approve CR `REVOKE_ROLES` tương ứng bằng một admin token (ngưỡng 1 trong demo). Với quorum Tide > 1 cần nhiều admin ký, một token không đủ: **CẦN KIỂM CHỨNG**.
+- `propose_role_change` và `approve` chỉ chạy ở Cosign (không gọi Tide); Tide không có reject nên từ chối chỉ ghi ở Cosign.
+- Lỗi mạng/Tide: `apply` raise `TideGovernanceError` (502 `tide_error`); request giữ `status=approved`, `apply_status=failed`, role chưa được cấp, phát WS `request.updated` (không phát `request.approved`). Chưa có API thử lại. Với `GOVERNANCE_FALLBACK_MOCK=true` lỗi Tide chỉ được log và luồng đi tiếp như mock (`apply_status=applied`, không có `tide_change_request_id`).
+- Username Cosign phải trùng username user trong realm Tide, và realm role (vd `_tide_customer_pii.selfdecrypt`) phải tồn tại sẵn.
 
 Kết quả spike quyết định `GOVERNANCE_MODE` khi quay video. Dù mode nào, **phần decrypt vẫn là Tide thật** (doDecrypt trong trình duyệt): đó là điểm "Tide từ chối, không phải if/else".
 

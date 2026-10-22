@@ -1,9 +1,17 @@
 import hashlib
+import logging
+import time
 from dataclasses import dataclass
 from typing import Literal, Protocol
+from urllib.parse import quote
+
+import httpx
 
 from .clock import iso, now
 from .config import Settings
+from .errors import ApiError
+
+log = logging.getLogger("cosign.governance")
 
 CRStatus = Literal["pending", "approved", "denied", "committed"]
 
@@ -104,35 +112,139 @@ class MockTideGovernance:
         return list(dict.fromkeys(self._base.get(username, []) + granted))
 
 
-class RealTideGovernance:
-    """TODO #15: implement against TideCloak change-request API (spike issue #1)."""
+class TideGovernanceError(ApiError):
+    def __init__(self, message: str, details: dict | None = None):
+        super().__init__(502, "tide_error", message, details)
 
-    def __init__(self, settings: Settings):
+
+class RealTideGovernance(MockTideGovernance):
+    """Hybrid: Cosign counts quorum and keeps its own view of authority (mock bookkeeping);
+    on commit/revoke it also drives TideCloak IGA (spike #1: role-mappings -> PENDING change
+    request -> approve). With GOVERNANCE_FALLBACK_MOCK=true, Tide failures fall back to mock only.
+
+    Revoke approves the REVOKE_ROLES CR with a single admin token (threshold 1 in the demo realm).
+    With a Tide quorum > 1 more admins must sign: CẦN KIỂM CHỨNG.
+    """
+
+    def __init__(self, settings: Settings, seed_roles: dict[str, list[str]] | None = None,
+                 transport: httpx.BaseTransport | None = None):
+        super().__init__(seed_roles if seed_roles is not None else seed_roles_default())
         self.settings = settings
+        self._http = httpx.Client(timeout=10, transport=transport)
+        self._token: tuple[str, float] | None = None
+        self.last_change_request_ids: list[str] = []
 
-    def propose_role_change(self, target_user, add, remove, reason, meta):
-        raise NotImplementedError("TODO #15: POST role-mappings -> TideCloak change request")
+    def _fail(self, what: str, exc: Exception) -> None:
+        if self.settings.governance_fallback_mock:
+            log.warning("Tide %s failed, falling back to mock: %s", what, exc)
+            return
+        if isinstance(exc, TideGovernanceError):
+            raise exc
+        raise TideGovernanceError(f"TideCloak {what} failed: {exc}") from exc
 
-    def approve(self, tide_cr_id, approver):
-        raise NotImplementedError("TODO #15: approve change request (API or admin console popup + poll)")
+    def _admin_token(self) -> str:
+        if self._token and self._token[1] > time.monotonic():
+            return self._token[0]
+        s = self.settings
+        r = self._http.post(
+            f"{s.tidecloak_url}/realms/{s.tide_admin_realm}/protocol/openid-connect/token",
+            data={"grant_type": "password", "client_id": s.tide_admin_client_id,
+                  "username": s.tide_admin_user, "password": s.tide_admin_password})
+        if r.status_code != 200:
+            raise TideGovernanceError(f"admin token request returned {r.status_code}")
+        body = r.json()
+        self._token = (body["access_token"], time.monotonic() + max(5, body.get("expires_in", 60) - 10))
+        return self._token[0]
+
+    def _call(self, method: str, path: str, ok: tuple[int, ...] = (200, 201, 204, 202), **kw) -> httpx.Response:
+        s = self.settings
+        r = self._http.request(method, f"{s.tidecloak_url}/admin/realms/{s.tidecloak_realm}/{path}",
+                               headers={"Authorization": f"Bearer {self._admin_token()}"}, **kw)
+        if r.status_code not in ok:
+            raise TideGovernanceError(f"{method} {path} returned {r.status_code}: {r.text[:200]}")
+        return r
+
+    def _user_id(self, username: str) -> str:
+        users = self._call("GET", "users", params={"username": username, "exact": "true"}).json()
+        if not users:
+            raise TideGovernanceError(f"user {username} not found in realm {self.settings.tidecloak_realm}")
+        return users[0]["id"]
+
+    def _role_reps(self, roles: list[str]) -> list[dict]:
+        reps = []
+        for name in roles:
+            r = self._call("GET", f"roles/{quote(name, safe='')}", ok=(200, 404))
+            if r.status_code == 404:
+                raise TideGovernanceError(f"realm role {name} does not exist")
+            reps.append(r.json())
+        return reps
+
+    def _user_realm_roles(self, uid: str) -> set[str]:
+        return {r["name"] for r in self._call("GET", f"users/{uid}/role-mappings/realm").json()}
+
+    def _approve_matching(self, action: str, uid: str, role_ids: set[str]) -> list[str]:
+        crs = self._call("GET", "iga/change-requests", params={"status": "PENDING"}).json()
+        if isinstance(crs, dict):
+            crs = crs.get("changeRequests") or crs.get("items") or []
+        done = []
+        for cr in crs:
+            if cr.get("actionType") != action or cr.get("entityId") != uid:
+                continue
+            if not role_ids & {row.get("ROLE_ID") for row in cr.get("rows", [])}:
+                continue
+            self._call("POST", f"iga/change-requests/{cr['id']}/approve", json={})
+            done.append(cr["id"])
+        return done
+
+    def _change_roles(self, username: str, roles: list[str], grant: bool) -> list[str]:
+        uid = self._user_id(username)
+        reps = self._role_reps(roles)
+        have = self._user_realm_roles(uid)
+        todo = [r for r in reps if (r["name"] not in have) == grant]
+        ids: list[str] = []
+        if todo:
+            self._call("POST" if grant else "DELETE", f"users/{uid}/role-mappings/realm", json=todo)
+            ids = self._approve_matching("GRANT_ROLES" if grant else "REVOKE_ROLES", uid, {r["id"] for r in todo})
+            if not ids:
+                raise TideGovernanceError("no matching PENDING change request after role-mapping call")
+        after = self._user_realm_roles(uid)
+        bad = [r for r in roles if (r in after) != grant]
+        if bad:
+            raise TideGovernanceError(f"roles {bad} not {'granted' if grant else 'removed'} after approve")
+        return ids
 
     def apply(self, tide_cr_id, target_user, add, remove, expires_at=None):
-        raise NotImplementedError("TODO #15: commit approved change request")
-
-    def status(self, tide_cr_id):
-        raise NotImplementedError("TODO #15")
+        self.last_change_request_ids = []
+        try:
+            ids = []
+            if add:
+                ids += self._change_roles(target_user, add, True)
+            if remove:
+                ids += self._change_roles(target_user, remove, False)
+        except (httpx.HTTPError, TideGovernanceError, KeyError, ValueError) as exc:
+            self._fail("apply", exc)
+        else:
+            self.last_change_request_ids = ids
+        super().apply(tide_cr_id, target_user, add, remove, expires_at)
 
     def revoke_role(self, target_user, roles):
-        raise NotImplementedError("TODO #15: DELETE role-mappings (quorum needed?)")
-
-    def user_roles(self, username):
-        raise NotImplementedError("TODO #15")
+        super().revoke_role(target_user, roles)
+        if not roles:
+            return
+        try:
+            self._change_roles(target_user, roles, False)
+        except (httpx.HTTPError, TideGovernanceError, KeyError, ValueError) as exc:
+            self._fail("revoke", exc)
 
 
 def make_governance(settings: Settings) -> TideGovernance:
     if settings.governance_mode == "real":
         return RealTideGovernance(settings)
     return MockTideGovernance(seed_roles())
+
+
+def seed_roles_default() -> dict[str, list[str]]:
+    return seed_roles()
 
 
 def seed_roles() -> dict[str, list[str]]:
