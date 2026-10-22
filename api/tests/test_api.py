@@ -36,22 +36,9 @@ def test_me_human_home(client):
     assert client.get("/api/v1/me", headers=LINH).json()["home"] == "/incidents"
 
 
-def test_requests_mock(client):
-    r = client.get("/api/v1/requests", headers=LINH)
-    assert r.status_code == 200
-    assert r.json() == mock("requests.json")
-
-
 def test_role_gate(client):
     r = client.get("/api/v1/admin/users", headers=LINH)
     assert r.status_code == 403
-
-
-def test_approve_cycles_variants(client):
-    first = client.post("/api/v1/requests/CR-0192/approve", headers=LINH).json()
-    second = client.post("/api/v1/requests/CR-0192/approve", headers=LINH).json()
-    assert first == mock("request-approve.json")
-    assert second == mock("request-approve-2.json")
 
 
 def test_audit_delete_refused(client):

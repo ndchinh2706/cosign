@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 
-from ..auth import require_roles
+from ..auth import User, current_user, require_roles
+from ..policy import Policy
 from ..mocks import Mock, load_mock, mount_mocks
 
 router = APIRouter()
@@ -15,10 +16,14 @@ def policy_draft(request: Request):
             "request": {**req, "type": "policy_change", "capability": "policy.edit", "tier": "T3"}}
 
 
+@router.get("/policies")
+def policies(request: Request, user: User = Depends(current_user)):
+    return Policy.load(request.app.state.db).body
+
+
 mount_mocks(router, [
     Mock("GET", "/governance/overview", "governance-overview.json", roles=GOV_READERS),
     Mock("GET", "/governance/authority-map", "authority-map.json", roles=GOV_READERS),
-    Mock("GET", "/policies", "policies.json"),
     Mock("GET", "/policies/versions", "policy-versions.json", roles=("security", "compliance")),
     Mock("GET", "/agents", "agents.json", roles=("security", "oncall")),
     Mock("GET", "/agents/{username}", "agent-detail.json", roles=("security", "oncall")),

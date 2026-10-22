@@ -1,9 +1,13 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from . import payments
+from . import seed as seeding
 from . import ws
+from .access import AccessService
 from .config import Settings, get_settings
 from .db import init_db
 from .errors import install_error_handlers
@@ -13,13 +17,33 @@ from .routers import admin, agent, audit, core, demo, governance, incidents, rec
 API_PREFIX = "/api/v1"
 
 
+async def _expiry_sweeper(app: FastAPI, interval: float) -> None:
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            await app.state.access.expire_due()
+        except Exception:
+            pass
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.db = init_db(settings.db_path)
+        payments.ensure_tables(app.state.db)
+        app.state.payments_db = app.state.db
+        if hasattr(app.state.governance, "bind_db"):
+            app.state.governance.bind_db(app.state.db)
+        seeding.seed(app.state.db, settings.mocks_dir, app.state.governance)
+        seeding.rehydrate(app.state.db, app.state.governance)
+        app.state.access = AccessService(app)
+        sweeper = asyncio.create_task(_expiry_sweeper(app, settings.expiry_sweep_s))
         yield
+        sweeper.cancel()
+        with suppress(asyncio.CancelledError):
+            await sweeper
         app.state.db.close()
 
     app = FastAPI(title="Cosign API", version=settings.version, lifespan=lifespan)

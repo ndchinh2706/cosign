@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 
 from ..auth import User, current_user
 from ..config import Settings, get_settings
-from ..mocks import Mock, load_mock, mount_mocks
+from ..mocks import load_mock, mount_mocks
 
 router = APIRouter()
 
@@ -26,7 +26,15 @@ def me(request: Request, user: User = Depends(current_user)):
             "open_requests": 0, "context_flagged": False}
 
 
-mount_mocks(router, [
-    Mock("GET", "/notifications", "notifications.json"),
-    Mock("POST", "/notifications/{id}/read", status=204),
-])
+@router.get("/notifications")
+def notifications(request: Request, user: User = Depends(current_user)):
+    return request.app.state.access.notifications(user.username)
+
+
+@router.post("/notifications/{id}/read", status_code=204)
+def notification_read(id: str, request: Request, user: User = Depends(current_user)):
+    request.app.state.access.mark_read(user.username, id)
+    return Response(status_code=204)
+
+
+mount_mocks(router, [])

@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     mocks_dir: Path = REPO_ROOT / "docs" / "mocks"
     cors_origins: list[str] = ["http://localhost:3000"]
     ws_auth_timeout_s: float = 5.0
+    signing_tick_s: float = 0.2
+    expiry_sweep_s: float = 5.0
     version: str = "0.1.0"
 
     @property
