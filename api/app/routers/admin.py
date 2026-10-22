@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from ..access import RolesBody
 from ..auth import User, require_roles
-from ..mocks import Mock, mount_mocks
+from ..insights import Insights
+from .audit import list_audit
 
 router = APIRouter()
 
@@ -15,10 +16,29 @@ async def put_roles(username: str, body: RolesBody, request: Request, response: 
     return out
 
 
-mount_mocks(router, [
-    Mock("GET", "/admin/users", "admin-users.json", roles=("admin", "security")),
-    Mock("GET", "/admin/data/merchants", "admin-merchants.json", roles=("admin", "security", "compliance")),
-    Mock("POST", "/admin/data/merchants/export", "admin-export.json", roles=("admin",)),
-    Mock("GET", "/admin/audit", "audit.json", roles=("admin",)),
-    Mock("DELETE", "/admin/audit/{id}", "admin-audit-delete.json", 403, roles=("admin",)),
-])
+@router.get("/admin/users", dependencies=[Depends(require_roles("admin", "security"))])
+def admin_users(request: Request):
+    return Insights(request.app).admin_users()
+
+
+@router.get("/admin/data/merchants", dependencies=[Depends(require_roles("admin", "security", "compliance"))])
+def merchants(request: Request, limit: int = Query(5, ge=1, le=100)):
+    return Insights(request.app).merchants(limit)
+
+
+@router.post("/admin/data/merchants/export")
+async def export_merchants(request: Request, user: User = Depends(require_roles("admin"))):
+    return await Insights(request.app).export_merchants(user)
+
+
+@router.get("/admin/audit", dependencies=[Depends(require_roles("admin"))])
+def admin_audit(request: Request, actor_type: str | None = None, incident: str | None = None,
+                capability: str | None = None, outcome: str | None = None,
+                from_: str | None = Query(None, alias="from"), to: str | None = None,
+                limit: int = Query(50, ge=1, le=200), cursor: str | None = None):
+    return list_audit(request, actor_type, incident, capability, outcome, from_, to, limit, cursor)
+
+
+@router.delete("/admin/audit/{id}")
+async def delete_audit(id: str, request: Request, user: User = Depends(require_roles("admin"))):
+    await Insights(request.app).refuse_audit_delete(user, id)

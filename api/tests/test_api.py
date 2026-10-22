@@ -3,6 +3,7 @@ import json
 import pytest
 from starlette.websockets import WebSocketDisconnect
 
+from app.audit_log import append_audit
 from app.config import Settings
 
 AGENT = {"X-Demo-User": "ai-oncall-agent"}
@@ -28,8 +29,14 @@ def test_me_requires_auth(client):
     assert r.json()["error"]["code"] == "unauthenticated"
 
 
-def test_me_agent_matches_mock(client):
-    assert client.get("/api/v1/me", headers=AGENT).json() == mock("me.json")
+def test_me_agent_matches_mock_shape(client):
+    got, want = client.get("/api/v1/me", headers=AGENT).json(), mock("me.json")
+    assert set(got) == set(want)
+    for k in ("user", "roles", "home", "context_flagged"):
+        assert got[k] == want[k]
+    states = {a["capability"]: a["state"] for a in got["authority"]}
+    assert states == {**{a["capability"]: a["state"] for a in want["authority"]}, "customer_pii.selfdecrypt": "pending"}
+    assert got["open_requests"] == 3
 
 
 def test_me_human_home(client):
@@ -42,7 +49,9 @@ def test_role_gate(client):
 
 
 def test_audit_delete_refused(client):
-    r = client.delete("/api/v1/admin/audit/ae_0007", headers={"X-Demo-User": "dave.kim"})
+    ev = append_audit(client.app.state.db, actor="ai-oncall-agent", actor_type="agent", action="decrypt_records",
+                      target="customer_pii:mrc_8812", outcome="refused")
+    r = client.delete(f"/api/v1/admin/audit/{ev['id']}", headers={"X-Demo-User": "dave.kim"})
     assert r.status_code == 403
     assert r.json()["error"]["code"] == "tide_refused"
 

@@ -33,9 +33,18 @@ def seed(db: sqlite3.Connection, mocks: Path, gov) -> None:
         return
     _seed_base(db, mocks)
     policy = _load(mocks, "policies.json")
-    db.execute("INSERT INTO policy_versions (version, body_json, signed_by_json, hash, created_at) VALUES (?,?,?,?,?)",
+    history = {v["version"]: v for v in _load(mocks, "policy-versions.json")["items"]}
+    db.execute("INSERT INTO policy_versions (version, body_json, signed_by_json, hash, created_at, signature, change)"
+               " VALUES (?,?,?,?,?,?,?)",
                (policy["version"], json.dumps(policy), json.dumps(policy.get("signed_by", [])),
-                policy.get("hash"), policy.get("created_at")))
+                policy.get("hash"), policy.get("created_at"), policy.get("signature"),
+                history.get(policy["version"], {}).get("change")))
+    for v in history.values():
+        if v["version"] != policy["version"]:
+            db.execute("INSERT INTO policy_versions (version, body_json, signed_by_json, hash, created_at, signature,"
+                       " change) VALUES (?,NULL,?,?,?,?,?)",
+                       (v["version"], json.dumps([{"username": u} for u in v["signed_by"]]), v["hash"],
+                        v["created_at"], v["signature"], v["change"]))
     pol = Policy(policy)
     for r in _load(mocks, "requests.json")["items"]:
         spec = pol.tier_spec(r["tier"])

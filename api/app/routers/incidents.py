@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from .. import payments
 from ..auth import require_roles
-from ..mocks import Mock, mount_mocks
+from ..insights import Insights
 
 router = APIRouter()
 anyone = [Depends(require_roles("*"))]
@@ -43,7 +43,11 @@ def logs(service: str = payments.SERVICE, since: str = "03:00", db=Depends(payme
     return payments.list_logs(db, service, since)
 
 
-mount_mocks(router, [
-    Mock("GET", "/incidents/{id}/access", "incident-access.json"),
-    Mock("GET", "/incidents/{id}/receipt", "receipt.json", roles=("compliance", "security", "oncall")),
-])
+@router.get("/incidents/{id}/access", dependencies=anyone)
+def incident_access(id: str, request: Request):
+    return Insights(request.app).incident_access(id)
+
+
+@router.get("/incidents/{id}/receipt", dependencies=[Depends(require_roles("compliance", "security", "oncall"))])
+def incident_receipt(id: str, request: Request):
+    return Insights(request.app).receipt(id)

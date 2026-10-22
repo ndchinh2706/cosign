@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS audit_events (
   signature TEXT, prev_hash TEXT, hash TEXT
 );
 CREATE TABLE IF NOT EXISTS policy_versions (
-  version TEXT PRIMARY KEY, body_json TEXT, signed_by_json TEXT, hash TEXT, created_at TEXT
+  version TEXT PRIMARY KEY, body_json TEXT, signed_by_json TEXT, hash TEXT, created_at TEXT,
+  signature TEXT, change TEXT
 );
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY, user TEXT, group_name TEXT, title TEXT, body TEXT, request_id TEXT,
@@ -75,5 +76,9 @@ def connect(path: str) -> sqlite3.Connection:
 def init_db(path: str) -> sqlite3.Connection:
     conn = connect(path)
     conn.executescript(SCHEMA)
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(policy_versions)")}
+    for col in ("signature", "change"):
+        if col not in cols:
+            conn.execute(f"ALTER TABLE policy_versions ADD COLUMN {col} TEXT")
     conn.commit()
     return conn

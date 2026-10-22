@@ -1,19 +1,17 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Body, Depends, Request
 
 from ..auth import User, current_user, require_roles
+from ..insights import Insights
 from ..policy import Policy
-from ..mocks import Mock, load_mock, mount_mocks
 
 router = APIRouter()
 
 GOV_READERS = ("security", "admin", "compliance")
 
 
-@router.post("/policies/draft", status_code=202, dependencies=[Depends(require_roles("security"))])
-def policy_draft(request: Request):
-    req = load_mock(request, "request-create.json")
-    return {"code": "quorum_required", "message": "Policy changes require T3 quorum.",
-            "request": {**req, "type": "policy_change", "capability": "policy.edit", "tier": "T3"}}
+@router.post("/policies/draft", status_code=202)
+async def policy_draft(request: Request, draft: dict = Body(...), user: User = Depends(require_roles("security"))):
+    return await Insights(request.app).policy_draft(user, draft)
 
 
 @router.get("/policies")
@@ -21,11 +19,35 @@ def policies(request: Request, user: User = Depends(current_user)):
     return Policy.load(request.app.state.db).body
 
 
-mount_mocks(router, [
-    Mock("GET", "/governance/overview", "governance-overview.json", roles=GOV_READERS),
-    Mock("GET", "/governance/authority-map", "authority-map.json", roles=GOV_READERS),
-    Mock("GET", "/policies/versions", "policy-versions.json", roles=("security", "compliance")),
-    Mock("GET", "/agents", "agents.json", roles=("security", "oncall")),
-    Mock("GET", "/agents/{username}", "agent-detail.json", roles=("security", "oncall")),
-    Mock("POST", "/agents/{username}/revoke-all", "agent-revoke-all.json", roles=("security",)),
-])
+@router.get("/policies/versions", dependencies=[Depends(require_roles("security", "compliance"))])
+def policy_versions(request: Request):
+    return Insights(request.app).policy_versions()
+
+
+@router.get("/governance/overview", dependencies=[Depends(require_roles(*GOV_READERS))])
+async def overview(request: Request):
+    await request.app.state.access.expire_due()
+    return Insights(request.app).overview()
+
+
+@router.get("/governance/authority-map", dependencies=[Depends(require_roles(*GOV_READERS))])
+async def authority_map(request: Request):
+    await request.app.state.access.expire_due()
+    return Insights(request.app).authority_map()
+
+
+@router.get("/agents", dependencies=[Depends(require_roles("security", "oncall"))])
+async def agents(request: Request):
+    await request.app.state.access.expire_due()
+    return Insights(request.app).agents()
+
+
+@router.get("/agents/{username}", dependencies=[Depends(require_roles("security", "oncall"))])
+async def agent_detail(username: str, request: Request):
+    await request.app.state.access.expire_due()
+    return Insights(request.app).agent_detail(username)
+
+
+@router.post("/agents/{username}/revoke-all")
+async def revoke_all(username: str, request: Request, user: User = Depends(require_roles("security"))):
+    return await Insights(request.app).revoke_all(user, username)

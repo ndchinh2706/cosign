@@ -1751,6 +1751,7 @@ components:
         signature: { type: string }
         verified_at: { type: string, format: date-time }
         method: { type: string }
+        reason: { type: string, description: "Chỉ có khi verified=false: hash không khớp nội dung hoặc prev_hash lệch." }
     Receipt:
       type: object
       properties:
