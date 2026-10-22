@@ -31,26 +31,33 @@ function useMockConsole(base: ConsoleState) {
 export default function AgentConsole() {
   const { me } = useSession()
   const { doDecrypt } = useTide()
-  const { data: snapshot } = useApi<Run>('/agent/runs/run_01')
+  const { data: runs } = useApi<{ items: { id: string }[] }>(API_MODE === 'live' ? '/agent/runs?incident=INC-2417' : null)
+  const runId = API_MODE === 'live' ? runs?.items[0]?.id : 'run_01'
+  const { data: snapshot } = useApi<Run>(runId ? `/agent/runs/${runId}` : null)
   const { data: metrics } = useApi<Metrics>('/incidents/INC-2417/metrics')
   const base = useMemo<ConsoleState>(() => ({ run: snapshot, authority: me?.authority ?? [], errorRate: 0.38, requests: {} }), [snapshot, me])
   const mockState = useMockConsole(base)
   const [liveState, setLiveState] = useState<ConsoleState>(base)
   const [plain, setPlain] = useState<PlainRecord[] | null>(null)
   const [open, setOpen] = useState<Record<string, boolean>>({ st_04: true })
-  const { on, send } = useCosignSocket(['run:run_01', 'incident:INC-2417', 'user:ai-oncall-agent'], { console: true })
+  const { on, send } = useCosignSocket([`run:${runId ?? 'run_01'}`, 'incident:INC-2417', 'user:ai-oncall-agent'], { console: true })
   // Live state starts before /me and the run snapshot land; fall back to them until events arrive.
+  const snapRef = useRef(snapshot)
+  useEffect(() => {
+    snapRef.current = snapshot
+  }, [snapshot])
   const st = API_MODE === 'mock' ? mockState : { ...liveState, run: liveState.run ?? snapshot, authority: liveState.authority.length ? liveState.authority : me?.authority ?? [] }
 
   // Live: fold every event; answer tool_call by decrypting in this tab (docs/API.md §6.4).
   useEffect(() => {
     if (API_MODE === 'mock') return
-    const offAll = on('*', (e) => setLiveState((s) => applyEvent(s, e)))
+    const offAll = on('*', (e) => setLiveState((s) => applyEvent({ ...s, run: s.run ?? snapRef.current }, e)))
     const offCall = on('tool_call', async (e) => {
       const p = e.payload as { run_id: string; step_id: string; call_id: string; tool: string; input: { ids: string[] } }
       const reply = (extra: Record<string, unknown>) => send('tool_result', { run_id: p.run_id, step_id: p.step_id, call_id: p.call_id, tool: p.tool, ...extra })
       try {
         const { items } = await apiGet<{ items: { id: string; tag: string; ciphertext: string }[] }>(`/records?ids=${p.input.ids.join(',')}`)
+        if (items.length < p.input.ids.length) throw new Error(`no ciphertext for ${p.input.ids.length - items.length} of ${p.input.ids.length} records; run /admin/data/seed first`)
         const out = await doDecrypt(items.map((r) => ({ encrypted: r.ciphertext, tags: [r.tag] })))
         const records = out.map((s) => JSON.parse(s) as PlainRecord)
         const fields = ['name', 'settlement_bank', 'payout_currency', 'last_tx']
@@ -82,7 +89,8 @@ export default function AgentConsole() {
   }, [count])
 
   const run = st.run
-  const cr = st.requests['CR-0192']
+  const crId = String(st.run?.steps.find((s) => s.tool_name === 'request_access')?.output?.request_id ?? 'CR-0192')
+  const cr = st.requests[crId]
   const seal = (cr?.quorum?.signed_by ?? []).map((s) => ({ username: s.username }))
   const granted = st.authority.find((a) => a.capability === 'customer_pii.selfdecrypt')?.state === 'granted'
   const statusPill = run?.status === 'completed' ? { t: 'Completed', c: 'var(--ok)' } : run?.status === 'waiting_approval' ? { t: 'Waiting for approval', c: 'var(--pending)' } : { t: 'Atlas is working', c: 'var(--agent)' }
@@ -225,7 +233,8 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
       </div>
     )
   if (s.tool_name === 'request_access') {
-    const inp = s.input as { capability: string; scope: { record_ids: string[] }; duration_min: number; justification: string }
+    const inp = s.input as { capability: string; scope?: Record<string, unknown> & { record_ids?: string[] }; duration_min?: number; justification: string }
+    const required = Number(s.output?.required ?? 2)
     return (
       <div className="card" data-screen="A3" style={{ maxWidth: 820, borderColor: 'var(--control)', overflow: 'hidden' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -237,14 +246,14 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
         <dl style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', rowGap: 12, columnGap: 16, padding: '16px 18px', margin: 0 }}>
           <dt className="muted">Capability</dt><dd style={{ margin: 0 }}><code>_tide_{inp.capability}</code></dd>
           <dt className="muted">Scope</dt>
-          <dd style={{ margin: 0, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>{inp.scope.record_ids.length} records {inp.scope.record_ids.map((id) => <code key={id} style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)' }}>{id}</code>)}</dd>
-          <dt className="muted">Duration</dt><dd style={{ margin: 0 }}>{inp.duration_min} minutes</dd>
+          <dd style={{ margin: 0, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>{inp.scope?.record_ids ? <>{inp.scope.record_ids.length} records {inp.scope.record_ids.map((id) => <code key={id} style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)' }}>{id}</code>)}</> : Object.entries(inp.scope ?? {}).map(([k, v]) => <code key={k}>{k}={String(v)}</code>)}</dd>
+          <dt className="muted">Duration</dt><dd style={{ margin: 0 }}>{inp.duration_min ? `${inp.duration_min} minutes` : <span className="muted">—</span>}</dd>
           <dt className="muted">Justification</dt><dd style={{ margin: 0, lineHeight: 1.55 }}>&ldquo;{inp.justification}&rdquo;</dd>
           <dt className="muted">Risk tier</dt><dd style={{ margin: 0 }}><RiskChip tier={s.tier ?? 'T2'} /></dd>
         </dl>
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <QuorumSeal required={2} approvals={seal} size={34} />
-          <span>{cr?.status === 'approved' ? `Approved ${seal.length} / 2 · threshold-signed` : `Submitted · waiting for quorum ${seal.length} / 2. Atlas cannot approve it.`}</span>
+          <QuorumSeal required={required} approvals={seal} size={34} />
+          <span>{cr?.status === 'approved' ? `Approved ${seal.length} / ${required} · threshold-signed` : `Submitted · waiting for quorum ${seal.length} / ${required}. Atlas cannot approve it.`}</span>
         </div>
       </div>
     )

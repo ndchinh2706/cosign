@@ -46,6 +46,8 @@ export function applyEvent(st: ConsoleState, e: Envelope): ConsoleState {
       return { ...st, run: { ...run, steps: upsertStep(run.steps, { id, seq, kind: 'message', ts: String(p.ts), status: 'ok', text: String(p.text) }) } }
     }
     case 'agent.run.status':
+      // A new run replaces the one on screen.
+      if (p.run_id && p.run_id !== run.id) return { ...st, run: { ...run, id: String(p.run_id), status: String(p.status), steps: [] } }
       return { ...st, run: { ...run, status: String(p.status) } }
     case 'injection.detected':
       return { ...st, injection: p as unknown as Injection, run: { ...run, context_flagged: true } }
