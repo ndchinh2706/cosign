@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AuthorityMeter, Icon, IdentityChip, QuorumSeal, RiskChip } from '@/components/ui'
 import { apiGet, apiPost, loadMock, useApi } from '@/lib/api'
 import { API_MODE } from '@/lib/config'
-import { applyEvent, type ConsoleState, type Run, type Step } from '@/lib/run'
+import { applyEvent, type ConsoleState, type Request, type Run, type Step } from '@/lib/run'
 import { useSession } from '@/lib/session'
 import { useTide } from '@/lib/tide'
 import { useCosignSocket, useReplay, type Envelope } from '@/lib/ws'
@@ -35,7 +35,9 @@ export default function AgentConsole() {
   const runId = API_MODE === 'live' ? runs?.items[0]?.id : 'run_01'
   const { data: snapshot } = useApi<Run>(runId ? `/agent/runs/${runId}` : null)
   const { data: metrics } = useApi<Metrics>('/incidents/INC-2417/metrics')
-  const base = useMemo<ConsoleState>(() => ({ run: snapshot, authority: me?.authority ?? [], errorRate: 0.38, requests: {} }), [snapshot, me])
+  const { data: incident } = useApi<{ error_rate: number }>('/incidents/INC-2417')
+  const { data: incidentReqs } = useApi<{ items: Request[] }>(API_MODE === 'live' ? '/requests?incident=INC-2417' : null)
+  const base = useMemo<ConsoleState>(() => ({ run: snapshot, authority: me?.authority ?? [], errorRate: incident?.error_rate, requests: {} }), [snapshot, me, incident])
   const mockState = useMockConsole(base)
   const [liveState, setLiveState] = useState<ConsoleState>(base)
   const [plain, setPlain] = useState<PlainRecord[] | null>(null)
@@ -46,7 +48,14 @@ export default function AgentConsole() {
   useEffect(() => {
     snapRef.current = snapshot
   }, [snapshot])
-  const st = API_MODE === 'mock' ? mockState : { ...liveState, run: liveState.run ?? snapshot, authority: liveState.authority.length ? liveState.authority : me?.authority ?? [] }
+  // Live: REST seeds what happened before mount (requests, error rate); WS events win once they arrive.
+  const st = API_MODE === 'mock' ? mockState : {
+    ...liveState,
+    run: liveState.run ?? snapshot,
+    authority: liveState.authority.length ? liveState.authority : me?.authority ?? [],
+    errorRate: liveState.errorRate ?? incident?.error_rate,
+    requests: { ...Object.fromEntries((incidentReqs?.items ?? []).map((r) => [r.id, r])), ...liveState.requests },
+  }
 
   // Live: fold every event; answer tool_call by decrypting in this tab (docs/API.md §6.4).
   useEffect(() => {
@@ -93,12 +102,16 @@ export default function AgentConsole() {
   // WS events win; REST covers a page opened after the quorum already signed.
   const { data: crSnap } = useApi<ConsoleState['requests'][string]>(API_MODE === 'live' && st.run ? `/requests/${crId}` : null)
   const cr = st.requests[crId] ?? crSnap
-  const seal = (cr?.quorum?.signed_by ?? []).map((s) => ({ username: s.username }))
+  const sealOf = (r?: Request) => (r?.quorum?.signed_by ?? []).map((s) => ({ username: s.username }))
+  const seal = sealOf(cr)
   const granted = st.authority.find((a) => a.capability === 'customer_pii.selfdecrypt')?.state === 'granted'
-  const statusPill = run?.status === 'completed' ? { t: 'Completed', c: 'var(--ok)' } : run?.status === 'waiting_approval' ? { t: 'Waiting for approval', c: 'var(--pending)' } : { t: 'Atlas is working', c: 'var(--agent)' }
+  const statusPill = ({ completed: { t: 'Completed', c: 'var(--ok)' }, waiting_approval: { t: 'Waiting for approval', c: 'var(--pending)' }, paused: { t: 'Paused', c: 'var(--text-muted)' }, failed: { t: 'Failed', c: 'var(--refused)' } } as Record<string, { t: string; c: string }>)[run?.status ?? ''] ?? { t: 'Atlas is working', c: 'var(--agent)' }
+  const openReqs = Object.values(st.requests).filter((r) => r.status === 'pending' && r.target_user === ATLAS.username)
 
   return (
-    <div data-screen="A1" style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,280px) minmax(0,1fr) minmax(260px,340px)', height: 'calc(100vh - var(--topbar-h))' }}>
+    <div data-screen="A1" className="a1-grid">
+      {/* ponytail: page-local media query; move to globals.css if another screen needs it */}
+      <style>{`.a1-grid{display:grid;grid-template-columns:minmax(220px,280px) minmax(0,1fr) minmax(260px,340px);height:calc(100vh - var(--topbar-h))}@media (max-width:900px){.a1-grid{grid-template-columns:minmax(0,1fr);height:auto}.a1-grid>section:nth-of-type(2){order:-1;min-height:70vh}}`}</style>
       {/* timeline */}
       <section style={{ borderRight: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         <div style={{ padding: '16px 18px 12px', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
@@ -147,13 +160,15 @@ export default function AgentConsole() {
         </div>
         <div ref={stream} className="stream" style={{ flex: 1, overflow: 'auto', padding: '20px 24px 120px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {!run?.steps.length && <p className="muted">The run has not started. Press Play to replay the storyboard.</p>}
-          {run?.steps.map((s) => (
-            <StreamItem key={s.id} s={s} open={!!open[s.id]} toggle={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))} injection={st.injection?.line} cr={cr} seal={seal} plain={granted ? plain : null} />
-          ))}
+          {run?.steps.map((s) => {
+            const id = String(s.output?.request_id ?? '')
+            const r = st.requests[id] ?? (id === crId ? crSnap : undefined)
+            return <StreamItem key={s.id} s={s} open={!!open[s.id]} toggle={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))} injection={st.injection?.line} cr={r} seal={sealOf(r)} plain={granted ? plain : null} />
+          })}
           {run?.status === 'completed' && (
             <div className="card" style={{ padding: 20, display: 'flex', alignItems: 'center', gap: 12, maxWidth: 820 }}>
               <Icon name="check" color="var(--ok)" />
-              <span style={{ flex: 1, fontWeight: 600 }}>Run completed · authority returned</span>
+              <span style={{ flex: 1, fontWeight: 600 }}>Run completed</span>
               <Link className="btn" href={`/agent/runs/${run.id}/summary`}>Run summary</Link>
             </div>
           )}
@@ -175,9 +190,9 @@ export default function AgentConsole() {
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 14, borderTop: '1px solid var(--border)' }}>
           <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Open requests</h2>
-          <span>{Object.values(st.requests).filter((r) => r.status === 'pending' && r.id !== 'CR-0194').length}</span>
+          <span>{openReqs.length}</span>
         </div>
-        {Object.values(st.requests).filter((r) => r.status === 'pending' && r.id !== 'CR-0194').map((r) => (
+        {openReqs.map((r) => (
           <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <QuorumSeal required={r.quorum?.required ?? 2} approvals={(r.quorum?.signed_by ?? []).map((s) => ({ username: s.username }))} size={28} />
             <span className="mono" style={{ fontSize: 12 }}>{r.id}</span>
@@ -234,9 +249,27 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
         </div>
       </div>
     )
+  if (s.status === 'error')
+    return (
+      <div className="card" style={{ maxWidth: 820, borderColor: 'var(--refused)', padding: '18px 20px', display: 'flex', gap: 14 }}>
+        <Icon name="cross" size={20} color="var(--refused)" />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ fontSize: 16, fontWeight: 600 }}>{s.error?.title ?? `${s.tool_name} failed`}</div>
+          <code style={{ color: 'var(--refused)' }}>{s.error?.code}{s.error?.message ? `: ${s.error.message}` : ''}</code>
+        </div>
+      </div>
+    )
   if (s.tool_name === 'request_access') {
     const inp = s.input as { capability: string; scope?: { record_ids?: string[]; deploy?: string }; duration_min?: number; justification: string }
-    const required = Number(s.output?.required ?? 2)
+    const required = Number(cr?.quorum?.required ?? s.output?.required ?? 2)
+    // The step is 'ok' only when the request was approved at creation, so it stands in for a missed WS event.
+    const status = cr?.status ?? (s.status === 'ok' ? 'approved' : 'pending')
+    const footer = ({
+      approved: `Approved ${seal.length} / ${required} · threshold-signed`,
+      expired: `Approved ${seal.length} / ${required} · grant expired`,
+      denied: `Denied by ${cr?.denied_by?.display_name ?? 'an approver'}${cr?.deny_reason ? `: ${cr.deny_reason}` : ''}`,
+      withdrawn: 'Withdrawn',
+    } as Record<string, string>)[status] ?? `Submitted · waiting for quorum ${seal.length} / ${required}. Atlas cannot approve it.`
     return (
       <div className="card" data-screen="A3" style={{ maxWidth: 820, borderColor: 'var(--control)', overflow: 'hidden' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -246,7 +279,7 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
           <span className="mono muted" style={{ fontSize: 12 }}>{String(s.output?.request_id ?? '')}</span>
         </div>
         <dl style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', rowGap: 12, columnGap: 16, padding: '16px 18px', margin: 0 }}>
-          <dt className="muted">Capability</dt><dd style={{ margin: 0 }}><code>_tide_{inp.capability}</code></dd>
+          <dt className="muted">Capability</dt><dd style={{ margin: 0 }}><code style={{ wordBreak: 'break-all' }}>_tide_{inp.capability}</code></dd>
           <dt className="muted">Scope</dt>
           <dd style={{ margin: 0, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>{inp.scope?.record_ids ? `${inp.scope.record_ids.length} records` : inp.scope?.deploy ? `deploy ${inp.scope.deploy}` : 'unscoped'} {(inp.scope?.record_ids ?? []).map((id) => <code key={id} style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)' }}>{id}</code>)}</dd>
           <dt className="muted">Duration</dt><dd style={{ margin: 0 }}>{inp.duration_min ? `${inp.duration_min} minutes` : 'Single use'}</dd>
@@ -255,7 +288,7 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
         </dl>
         <div style={{ padding: '12px 18px', borderTop: '1px solid var(--border)', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <QuorumSeal required={required} approvals={seal} size={34} />
-          <span>{cr?.status === 'approved' ? `Approved ${seal.length} / ${required} · threshold-signed` : `Submitted · waiting for quorum ${seal.length} / ${required}. Atlas cannot approve it.`}</span>
+          <span className={status === 'denied' || status === 'withdrawn' ? 'muted' : undefined}>{footer}</span>
         </div>
       </div>
     )

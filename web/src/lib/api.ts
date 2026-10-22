@@ -89,6 +89,11 @@ async function mockMe() {
 async function mockRequest<T>(method: Method, path: string): Promise<T> {
   const pathname = path.split('?')[0]
   if (method === 'GET' && pathname === '/me') return mockMe() as Promise<T>
+  // ponytail: mirrors api/app/seed.py, which seeds notifications only for linh and marcus
+  if (method === 'GET' && pathname === '/notifications' && !['linh.tran', 'marcus.lee'].includes(getDemoUser())) {
+    const f = await loadMock<{ groups: { items: unknown[] }[] }>('notifications.json')
+    return { unread: 0, groups: f.groups.map((g) => ({ ...g, items: [] })) } as T
+  }
   const entry = MOCKS.find((m) => m.method === method && m.pattern.test(pathname))
   if (!entry?.file) return {} as T // endpoint has no mock body (e.g. 204s)
   let file = entry.file

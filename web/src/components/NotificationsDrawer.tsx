@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { Icon, IdentityChip, QuorumSeal, RiskChip, type Person } from './ui'
 
 export type Notification = {
@@ -21,15 +22,21 @@ export type NotificationFeed = { unread: number; groups: { id: string; label: st
 const ATLAS: Person = { username: 'ai-oncall-agent', display_name: 'Atlas', type: 'agent' }
 
 // S3: docs/SCREENS.md. Approvals first, then agent activity, then security events.
-export function NotificationsDrawer({ feed, roles, onClose }: { feed: NotificationFeed; roles: string[]; onClose: () => void }) {
+export function NotificationsDrawer({ feed, roles, onClose, onRead }: { feed: NotificationFeed; roles: string[]; onClose: () => void; onRead: (id: string) => void }) {
   const reviewHref = (id: string) => (roles.includes('security-lead') ? `/governance/requests/${id}` : `/requests/${id}`)
+  const read = (n: Notification) => !n.read && onRead(n.id)
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [onClose])
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(5,6,10,.35)', zIndex: 40 }} />
-      <aside aria-label="Notifications" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(440px, 100vw)', background: 'var(--surface)', borderLeft: '1px solid var(--border)', boxShadow: 'var(--shadow)', zIndex: 41, display: 'flex', flexDirection: 'column', animation: 'cs-in 200ms ease' }}>
+      <aside role="dialog" aria-modal="true" aria-label="Notifications" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(440px, 100vw)', background: 'var(--surface)', borderLeft: '1px solid var(--border)', boxShadow: 'var(--shadow)', zIndex: 41, display: 'flex', flexDirection: 'column', animation: 'cs-in 200ms ease' }}>
         <div style={{ height: 56, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderBottom: '1px solid var(--border)' }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Notifications</h2>
-          <button className="btn btn-icon" style={{ border: 'none' }} onClick={onClose} aria-label="Close">
+          <button className="btn btn-icon" style={{ border: 'none' }} onClick={onClose} aria-label="Close" autoFocus>
             <Icon name="close" />
           </button>
         </div>
@@ -40,7 +47,7 @@ export function NotificationsDrawer({ feed, roles, onClose }: { feed: Notificati
               {!g.items.length && <p className="muted" style={{ margin: 0 }}>{g.id === 'approval' ? 'Nothing waiting on you.' : 'Nothing yet.'}</p>}
               {g.items.map((n) =>
                 g.id === 'approval' ? (
-                  <div key={n.id} className="card" style={{ display: 'flex', gap: 12, padding: 14, background: 'var(--surface-2)' }}>
+                  <div key={n.id} className="card" onClick={() => read(n)} style={{ display: 'flex', gap: 12, padding: 14, background: 'var(--surface-2)' }}>
                     <IdentityChip person={n.requester ?? ATLAS} size="md" avatarOnly />
                     <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                       <div style={{ lineHeight: 1.45 }}>{n.title}</div>
@@ -59,7 +66,7 @@ export function NotificationsDrawer({ feed, roles, onClose }: { feed: Notificati
                     </div>
                   </div>
                 ) : (
-                  <div key={n.id} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--rule)' }}>
+                  <div key={n.id} role="button" tabIndex={0} onClick={() => read(n)} onKeyDown={(e) => e.key === 'Enter' && read(n)} style={{ display: 'flex', gap: 10, padding: '8px 0', cursor: n.read ? undefined : 'pointer', borderBottom: '1px solid var(--rule)' }}>
                     <span style={{ width: 6, height: 6, marginTop: 7, borderRadius: '50%', flex: 'none', background: g.id === 'security' ? 'var(--refused)' : 'var(--text-muted)' }} />
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <span>{n.title}</span>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Icon, IdentityChip } from '@/components/ui'
-import { apiPost, useApi } from '@/lib/api'
+import { ApiError, apiPost, useApi } from '@/lib/api'
 import { findUser } from '@/lib/users'
 import { useCosignSocket } from '@/lib/ws'
 
@@ -23,7 +23,7 @@ type AuditEvent = {
   hash: string
   verified: boolean
 }
-type Verify = { id: string; verified: boolean; ork_nodes: string; verified_at: string; method: string }
+type Verify = { id: string; verified: boolean; ork_nodes: string; verified_at: string; method: string; reason?: string }
 
 const GROUP: Record<string, string> = { allowed: 'allowed', signed: 'allowed', approved: 'allowed', refused: 'refused', blocked: 'refused', denied: 'refused', pending: 'pending' }
 const COLOR: Record<string, string> = { allowed: 'var(--ok)', refused: 'var(--refused)', pending: 'var(--pending)' }
@@ -37,7 +37,8 @@ const byTsDesc = (a: AuditEvent, b: AuditEvent) => b.ts.localeCompare(a.ts)
 
 // C1: every action, hash-chained and threshold-signed; pick a row to re-verify its signature.
 export default function AuditTrail() {
-  const { data, error, loading } = useApi<{ items: AuditEvent[] }>('/audit')
+  const { data, error, loading } = useApi<{ items: AuditEvent[] }>('/audit?limit=200')
+  // ponytail: one page of 200 (the server max); follow next_cursor if a session ever logs more
   const [live, setLive] = useState<AuditEvent[]>([])
   const [filter, setFilter] = useState<Filter>({ actor: 'all', outcome: 'all' })
   const [sel, setSel] = useState<AuditEvent | null>(null)
@@ -49,7 +50,7 @@ export default function AuditTrail() {
   }), [on])
 
   const seen = new Set(live.map((e) => e.id))
-  const events = [...live, ...(data?.items ?? []).filter((e) => !seen.has(e.id)).sort(byTsDesc)].filter(
+  const events = [...live, ...(data?.items ?? []).filter((e) => !seen.has(e.id))].sort(byTsDesc).filter(
     (e) => (filter.actor === 'all' || e.actor_type === filter.actor) && (filter.outcome === 'all' || GROUP[e.outcome] === filter.outcome),
   )
   const td = { padding: '10px 16px' }
@@ -81,10 +82,13 @@ export default function AuditTrail() {
             </div>
           ))}
         </div>
-        {error && <p style={{ color: 'var(--refused)', margin: 0 }}>Couldn&apos;t load the audit trail. {error.message}</p>}
+        {error && (error instanceof ApiError && error.status === 403
+          ? <p className="muted" style={{ margin: 0 }}>The audit trail is visible to compliance, security, admin and on-call.</p>
+          : <p style={{ color: 'var(--refused)', margin: 0 }}>Couldn&apos;t load the audit trail. {error.message}</p>)}
         {loading && !data && <p className="muted" style={{ margin: 0 }}>Loading events…</p>}
         {data && (
-          <table className="card" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <div className="card" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
             <thead>
               <tr className="muted" style={{ fontSize: 12, textAlign: 'left' }}>
                 {[['Time', 92], ['Actor', 170], ['Action', 170], ['Target', undefined], ['Outcome', 96], ['Signature', 100]].map(([h, w]) => (
@@ -134,6 +138,7 @@ export default function AuditTrail() {
               )}
             </tbody>
           </table>
+          </div>
         )}
       </div>
       {sel && <AuditDetail key={sel.id} event={sel} onClose={() => setSel(null)} />}
@@ -179,7 +184,7 @@ function AuditDetail({ event, onClose }: { event: AuditEvent; onClose: () => voi
         {state.result && (
           <span role="status" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, color: ok ? 'var(--ok)' : 'var(--refused)' }}>
             <Icon name={ok ? 'check' : 'cross'} size={12} />
-            {ok ? `Verified · ${state.result.ork_nodes} ORK · ${state.result.verified_at.slice(11, 19)}` : 'Verification failed'}
+            {ok ? `Verified · ${state.result.ork_nodes} ORK · ${state.result.verified_at.slice(11, 19)}` : `Verification failed${state.result.reason ? ` · ${state.result.reason}` : ''}`}
           </span>
         )}
         {state.failed && <span role="status" style={{ fontSize: 12, color: 'var(--refused)' }}>Verification failed. {state.failed}</span>}

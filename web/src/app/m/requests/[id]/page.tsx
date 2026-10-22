@@ -1,11 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { use, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useSign } from '@/components/RequestReview'
 import { Icon, IdentityChip, QuorumSeal, RiskChip } from '@/components/ui'
-import { apiPost } from '@/lib/api'
-import { approvalState, useRequest, type ChangeRequest } from '@/lib/requests'
+import { toast } from '@/components/AppShell'
+import { agentNeverHolds, approvalState, denyRequest, useRequest } from '@/lib/requests'
 import { useSession } from '@/lib/session'
 
 // E5: Linh approves from her phone. One column, the decision in the thumb zone.
@@ -15,6 +15,16 @@ export default function MobileApproval({ params }: { params: Promise<{ id: strin
   const { cr, set } = useRequest(id)
   const [checks, setChecks] = useState(false)
   const { nodes, sign } = useSign(cr, set)
+  // /m has no AppShell toast host, so show toasts (signing and deny failures) inline.
+  const [err, setErr] = useState<string | null>(null)
+  useEffect(() => {
+    const h = (e: Event) => {
+      const t = (e as CustomEvent<{ title: string; body?: string }>).detail
+      setErr([t.title, t.body].filter(Boolean).join(' '))
+    }
+    window.addEventListener('cosign:toast', h)
+    return () => window.removeEventListener('cosign:toast', h)
+  }, [])
   if (!cr) return <p className="muted" style={{ padding: 20 }}>Loading {id}…</p>
   const blocked = me ? approvalState(cr, me.user.username, me.roles, me.user.type) : 'Loading…'
   const mine = cr.quorum.signed_by.some((s) => s.username === me?.user.username)
@@ -30,12 +40,13 @@ export default function MobileApproval({ params }: { params: Promise<{ id: strin
       </main>
     )
 
+  const failed = cr.apply_status === 'failed'
   if (mine)
     return (
       <main data-screen="E5" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 22, padding: 30, textAlign: 'center' }}>
         <QuorumSeal required={cr.quorum.required} approvals={cr.quorum.signed_by} size={200} />
-        <h1 style={{ fontSize: 26, color: 'var(--ok)' }}>Signed · {cr.quorum.signed_by.length} of {cr.quorum.required}</h1>
-        <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{cr.status === 'approved' ? 'Quorum reached. Access is granted for the approved window only.' : `Waiting for ${cr.quorum.required - cr.quorum.signed_by.length} more approver. Atlas gets nothing until the quorum is complete.`}</p>
+        <h1 style={{ fontSize: 26, color: failed ? 'var(--refused)' : 'var(--ok)' }}>Signed · {cr.quorum.signed_by.length} of {cr.quorum.required}</h1>
+        <p className="muted" style={{ margin: 0, fontSize: 14, lineHeight: 1.5 }}>{failed ? 'Quorum reached, but Tide did not apply the role. No access was granted.' : cr.status === 'approved' ? 'Quorum reached. Access is granted for the approved window only.' : `Waiting for ${cr.quorum.required - cr.quorum.signed_by.length} more approver. Atlas gets nothing until the quorum is complete.`}</p>
         <Link className="btn" style={{ height: 46, padding: '0 26px', fontSize: 16 }} href="/incidents">Done</Link>
       </main>
     )
@@ -54,7 +65,7 @@ export default function MobileApproval({ params }: { params: Promise<{ id: strin
           <IdentityChip person={cr.requester} size="md" sub="handle" />
           <code style={{ wordBreak: 'break-all' }}>{cr.roles.join(', ')}</code>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div style={{ padding: '10px 12px', borderRadius: 6, background: 'var(--surface-2)' }}><div className="muted" style={{ fontSize: 12 }}>Scope</div><div style={{ fontSize: 16, fontWeight: 600 }}>{cr.scope?.record_ids ? `${cr.scope.count} records` : 'realm-wide'}</div></div>
+            <div style={{ padding: '10px 12px', borderRadius: 6, background: 'var(--surface-2)' }}><div className="muted" style={{ fontSize: 12 }}>Scope</div><div style={{ fontSize: 16, fontWeight: 600 }}>{cr.scope?.record_ids?.length && !cr.scope.unscoped ? `${cr.scope.count} records` : 'realm-wide'}</div></div>
             <div style={{ padding: '10px 12px', borderRadius: 6, background: 'var(--surface-2)' }}><div className="muted" style={{ fontSize: 12 }}>Duration</div><div style={{ fontSize: 16, fontWeight: 600 }}>{cr.duration_min ? `${cr.duration_min} min` : 'permanent'}</div></div>
           </div>
           <RiskChip tier={cr.tier} />
@@ -80,8 +91,22 @@ export default function MobileApproval({ params }: { params: Promise<{ id: strin
           <span className="muted" style={{ padding: '16px 0', fontSize: 14 }}>{blocked}</span>
         ) : (
           <>
-            <button className="btn btn-primary" style={{ width: '100%', height: 56, fontSize: 16 }} onClick={sign}>Approve &amp; sign</button>
-            <button onClick={async () => set(await apiPost<ChangeRequest>(`/requests/${cr.id}/deny`, { reason: 'Denied on mobile' }))} style={{ height: 44, padding: '0 20px', border: 'none', background: 'transparent', color: 'var(--refused)', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>Deny</button>
+            {err && <span role="alert" style={{ color: 'var(--refused)', fontSize: 14, textAlign: 'center' }}>{err}</span>}
+            {agentNeverHolds(cr) ? (
+              <span style={{ color: 'var(--refused)', padding: '8px 0', fontSize: 14 }}>Agents can never hold roles.grant. Deny this request.</span>
+            ) : (
+              <button className="btn btn-primary" style={{ width: '100%', height: 56, fontSize: 16 }} onClick={() => { setErr(null); void sign() }}>Approve &amp; sign</button>
+            )}
+            <button
+              onClick={async () => {
+                setErr(null)
+                try {
+                  set(await denyRequest(cr, { reason: 'Denied on mobile' }))
+                } catch (e) {
+                  toast({ kind: 'refused', title: 'Deny failed.', body: (e as Error).message })
+                }
+              }}
+              style={{ height: 44, padding: '0 20px', border: 'none', background: 'transparent', color: 'var(--refused)', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>Deny</button>
           </>
         )}
       </footer>

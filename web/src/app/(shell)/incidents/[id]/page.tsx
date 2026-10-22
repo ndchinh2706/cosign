@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { use, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { IdentityChip, RiskChip } from '@/components/ui'
 import { useApi } from '@/lib/api'
+import { API_MODE } from '@/lib/config'
+import { useCosignSocket } from '@/lib/ws'
 
 type Timeline = { items: { id: string; ts: string; actor_type: string; actor: string; label: string; outcome: string }[] }
 type Access = { items: { id: string; requester: { username: string; display_name: string; type: 'agent' | 'human' }; capability: string; tier: string; escalated: boolean; status: string; approvals: number; required: number; flags: string[] }[] }
@@ -15,17 +17,31 @@ const OUT: Record<string, string> = { allowed: 'var(--text-muted)', refused: 'va
 export default function WarRoom({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [tab, setTab] = useState<'timeline' | 'access'>('timeline')
-  const { data: inc } = useApi<Incident>(`/incidents/${id}`)
-  const { data: tl } = useApi<Timeline>(`/incidents/${id}/timeline`)
-  const { data: access } = useApi<Access>(`/incidents/${id}/access`)
+  const { data: inc, mutate: refetchInc, setData: setInc } = useApi<Incident>(`/incidents/${id}`)
+  const { data: tl, mutate: refetchTl } = useApi<Timeline>(`/incidents/${id}/timeline`)
+  const { data: access, mutate: refetchAccess } = useApi<Access>(`/incidents/${id}/access`)
+  // ponytail: live refetches the snapshots on any related event; mock GETs are static, so mock only patches the status.
+  const { on } = useCosignSocket([`incident:${id}`])
+  useEffect(() => {
+    const all = () => {
+      refetchInc()
+      refetchTl()
+      refetchAccess()
+    }
+    const offs = [
+      on('incident.updated', (e) => (API_MODE === 'live' ? all() : setInc((i) => i && { ...i, status: (e.payload as { status: string }).status }))),
+      on('audit.appended', (e) => API_MODE === 'live' && (e.payload as { incident_id?: string }).incident_id === id && refetchTl()),
+      ...['request.created', 'request.updated', 'request.expired'].map((t) => on(t, () => API_MODE === 'live' && all())),
+    ]
+    return () => offs.forEach((off) => off())
+  }, [on, id, refetchInc, refetchTl, refetchAccess, setInc])
   return (
-    <div data-screen="E2" style={{ padding: '24px 32px 100px', display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 1200 }}>
+    <div data-screen="E2" style={{ padding: '24px clamp(16px, 4vw, 32px) 100px', display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 1200 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span className="mono muted">{id}</span>
         <h1>{inc?.title ?? 'War room'}</h1>
-        {inc && <span className="pill" style={{ ['--c' as string]: 'var(--pending)' }}>{inc.status}</span>}
+        {inc && <span className="pill" style={{ ['--c' as string]: inc.status === 'resolved' ? 'var(--ok)' : 'var(--pending)' }}>{inc.status}</span>}
         <span style={{ flex: 1 }} />
-        <Link className="btn" href="/agent">Agent console</Link>
       </div>
       <div role="tablist" style={{ display: 'flex', gap: 20, borderBottom: '1px solid var(--border)' }}>
         {(['timeline', 'access'] as const).map((t) => (
@@ -37,7 +53,7 @@ export default function WarRoom({ params }: { params: Promise<{ id: string }> })
       {tab === 'timeline' ? (
         <ol className="card" style={{ listStyle: 'none', margin: 0, padding: '8px 0' }}>
           {tl?.items.map((t) => (
-            <li key={t.id} style={{ display: 'grid', gridTemplateColumns: '80px 170px minmax(0,1fr) 90px', gap: 12, padding: '10px 18px', borderBottom: '1px solid var(--rule)', alignItems: 'center' }}>
+            <li key={t.id} style={{ display: 'grid', gridTemplateColumns: '64px min(170px, 25%) minmax(0,1fr) auto', gap: 12, padding: '10px 18px', borderBottom: '1px solid var(--rule)', alignItems: 'center' }}>
               <span className="muted">{t.ts.slice(11, 19)}</span>
               <IdentityChip person={{ username: t.actor, display_name: t.actor, type: t.actor_type === 'agent' ? 'agent' : 'human' }} size="xs" />
               <span>{t.label}</span>
