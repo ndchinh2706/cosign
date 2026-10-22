@@ -27,8 +27,20 @@ def _seed_base(db: sqlite3.Connection, mocks: Path) -> None:
          int(run["context_flagged"]), int(run["context_quarantined"])))
 
 
-def seed(db: sqlite3.Connection, mocks: Path, gov) -> None:
+def seed_records(db: sqlite3.Connection, mocks: Path) -> None:
+    """Load the sample ciphertexts (docs/mocks/records.json) only when merchant_records is empty."""
+    if db.execute("SELECT 1 FROM merchant_records LIMIT 1").fetchone():
+        return
+    for r in _load(mocks, "records.json")["items"]:
+        db.execute("INSERT OR IGNORE INTO merchant_records (id, tag, ciphertext, encrypted_by, encrypted_at)"
+                   " VALUES (?,?,?,?,?)", (r["id"], r["tag"], r["ciphertext"], r["encrypted_by"], r["encrypted_at"]))
+    db.commit()
+
+
+def seed(db: sqlite3.Connection, mocks: Path, gov, records: bool = True) -> None:
     """Idempotent: only fills an empty policy/request set."""
+    if records:
+        seed_records(db, mocks)
     if db.execute("SELECT 1 FROM policy_versions LIMIT 1").fetchone():
         return
     _seed_base(db, mocks)
@@ -83,9 +95,9 @@ def rehydrate(db: sqlite3.Connection, gov) -> None:
                                 {"required": r["required"], "request_id": r["id"], "approvers": approvers})
 
 
-def reset(db: sqlite3.Connection, mocks: Path, gov, seed_roles: dict) -> None:
+def reset(db: sqlite3.Connection, mocks: Path, gov, seed_roles: dict, records: bool = True) -> None:
     for t in RESET_TABLES:
         db.execute(f"DELETE FROM {t}")
     db.commit()
     gov.reset(seed_roles)
-    seed(db, mocks, gov)
+    seed(db, mocks, gov, records)
