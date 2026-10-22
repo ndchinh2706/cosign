@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     ws_auth_timeout_s: float = 5.0
     signing_tick_s: float = 0.2
     expiry_sweep_s: float = 5.0
+    agent_step_delay_s: float = 1.2
+    agent_tool_timeout_s: float = 30.0
+    agent_approval_timeout_s: float = 900.0
+    agent_max_turns: int = 24
     version: str = "0.1.0"
 
     @property

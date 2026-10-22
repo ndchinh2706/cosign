@@ -64,6 +64,10 @@ Nguyên tắc cứng:
 | `ANTHROPIC_API_KEY` | | agent loop; nếu trống → `AGENT_MODE=scripted` |
 | `AGENT_MODE` | `llm` | `llm` hoặc `scripted` (chạy kịch bản A1→A6 cố định, dùng cho quay video nếu LLM không ổn định) |
 | `DB_PATH` | `/data/cosign.db` | SQLite |
+| `AGENT_STEP_DELAY_S` | `1.2` | nhịp giữa các bước của run (scripted dùng để quay video; test đặt `0`) |
+| `AGENT_TOOL_TIMEOUT_S` | `30` | chờ `tool_result` của `decrypt_records` từ tab Agent Console |
+| `AGENT_APPROVAL_TIMEOUT_S` | `900` | chờ quorum duyệt trước khi run `failed` |
+| `AGENT_MAX_TURNS` | `24` | số lượt tối đa của vòng LLM |
 
 ---
 
