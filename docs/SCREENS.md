@@ -1,6 +1,6 @@
 # Cosign — tài liệu màn hình cho dev (Next.js)
 
-Viết cho người code. Design system (palette, type, mô tả visual của từng component) xem `COSIGN-SCREENS.md` §1, không chép lại ở đây. Contract API/WS xem `docs/API.md`; file mock ở `docs/mocks/`. Mỗi màn dưới đây ghi: route, role, component, nguồn data, hành động → API/WS, trạng thái, và chỗ gọi TideCloak SDK thật.
+Viết cho người code. Design system (palette, type, mô tả visual của từng component) xem `docs/planning/COSIGN-SCREENS.md` §1, không chép lại ở đây. Contract API/WS xem `docs/API.md`; file mock ở `docs/mocks/`. Mỗi màn dưới đây ghi: route, role, component, nguồn data, hành động → API/WS, trạng thái, và chỗ gọi TideCloak SDK thật.
 
 ---
 
@@ -89,7 +89,7 @@ Nav theo role (sidebar lấy từ `/me.roles`):
 
 ## 3. Component dùng chung
 
-Visual spec ở `COSIGN-SCREENS.md` §1. Ở đây chỉ ghi props và nguồn data.
+Visual spec ở `docs/planning/COSIGN-SCREENS.md` §1. Ở đây chỉ ghi props và nguồn data.
 
 | Component | Props chính | Nguồn data |
 |---|---|---|

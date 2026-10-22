@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:absolute;inset:0;overflow:auto;background:var(--bg)">
+<sc-if value="{{ isUsers }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="R1 Users and Roles" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:20px;max-width:1500px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Users &amp; Roles</span><span style="font:500 12px 'JetBrains Mono',monospace;color:var(--muted)">realm: northwind-prod · 5 identities</span><span style="flex:1"></span>
+      <button style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">+ Invite user</button></div>
+    <div style="border-radius:12px;border:1px solid var(--border);background:var(--surface);overflow:hidden">
+      <div style="display:grid;grid-template-columns:minmax(220px,1.3fr) 90px minmax(0,2fr) 110px 120px;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)"><span>User</span><span>Type</span><span>Roles</span><span>Last login</span><span></span></div>
+      <sc-for list="{{ users }}" as="u" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:minmax(220px,1.3fr) 90px minmax(0,2fr) 110px 120px;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);align-items:center">
+          <dc-import name="IdentityChip" person="{{ u.person }}" size="sm" sub="handle" hint-size="200px,26px"></dc-import>
+          <span style="font-size:12.5px;color:{{ u.typeC }}">{{ u.type }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
+            <sc-for list="{{ u.roles }}" as="r"><span style="height:22px;padding:0 8px;border-radius:5px;background:var(--surface2);border:1px solid var(--border);font:500 11.5px/20px 'JetBrains Mono',monospace">{{ r }}</span></sc-for>
+            <sc-if value="{{ u.hasPending }}" hint-placeholder-val="{{ false }}"><span style="height:22px;padding:0 8px;border-radius:5px;background:color-mix(in oklch, var(--pending) 14%, transparent);color:var(--pending);font:600 11.5px/22px 'JetBrains Mono',monospace">⏳ {{ u.pending }}</span></sc-if>
+          </div>
+          <span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">{{ u.last }}</span>
+          <button onClick="{{ u.onEdit }}" style="height:30px;padding:0 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:{{ u.editC }};font:600 12px Inter,sans-serif;cursor:pointer">Edit roles</button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(5,6,10,.35);z-index:30"></div>
+    <div data-screen-label="R2 Edit roles" style="position:absolute;top:0;right:0;bottom:0;width:480px;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow);z-index:31;display:flex;flex-direction:column;animation:cs-in 200ms ease">
+      <div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:16px;font-weight:600">Edit roles</span><code style="font:500 12.5px 'JetBrains Mono',monospace;color:var(--muted)">ai-oncall-agent</code></div>
+        <button onClick="{{ close }}" style="width:28px;height:28px;border:none;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:18px">×</button>
+      </div>
+      <sc-if value="{{ noCR }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:1;overflow:auto;padding:18px 22px;display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:12px;color:var(--muted);margin-bottom:8px">Realm roles</span>
+          <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="5">
+            <button onClick="{{ t.onClick }}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:9px;border:1px solid {{ t.bd }};background:{{ t.bg }};color:var(--text);cursor:pointer;text-align:left;font-family:inherit">
+              <span style="width:18px;height:18px;border-radius:5px;border:1.5px solid {{ t.boxBd }};background:{{ t.boxBg }};display:flex;align-items:center;justify-content:center;color:#0B0D12;font-size:12px;font-weight:700;flex:none">{{ t.mark }}</span>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px"><code style="font:500 13px 'JetBrains Mono',monospace">{{ t.role }}</code><span style="font-size:12px;color:var(--muted)">{{ t.desc }}</span></div>
+              <sc-if value="{{ t.isNew }}" hint-placeholder-val="{{ false }}"><span style="font:600 10.5px 'JetBrains Mono',monospace;color:var(--pending)">+ ADD</span></sc-if>
+            </button>
+          </sc-for>
+        </div>
+        <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--surface2)">
+          <button onClick="{{ close }}" style="height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Cancel</button>
+          <button onClick="{{ save }}" style="height:38px;padding:0 20px;border-radius:8px;border:none;background:var(--accent);color:#0B0D12;font:600 13px Inter,sans-serif;cursor:pointer">Save</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ hasCR }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:18px">
+          <div style="padding:20px;border-radius:12px;border:1.5px solid var(--pending);background:color-mix(in oklch, var(--pending) 8%, var(--surface));display:flex;flex-direction:column;gap:16px;animation:cs-in 260ms ease">
+            <div style="font-size:16px;font-weight:600;line-height:1.4">This is now Change Request <span style="font-family:'JetBrains Mono',monospace">CR-0195</span> · pending quorum (0 / 3).</div>
+            <div style="font-size:13.5px;color:var(--muted)">Your approval is not counted on your own request.</div>
+            <div style="display:flex;align-items:center;gap:18px">
+              <dc-import name="QuorumSeal" required="{{ 3 }}" approvals="{{ crSeal }}" size="{{ 100 }}" hint-size="100px,100px"></dc-import>
+              <div style="display:flex;flex-direction:column;gap:8px;flex:1">
+                <span style="font-size:12px;color:var(--muted)">Required approvers</span>
+                <dc-import name="IdentityChip" person="{{ linh }}" size="xs" sub="role" hint-size="160px,20px"></dc-import>
+                <dc-import name="IdentityChip" person="{{ marcus }}" size="xs" sub="role" hint-size="160px,20px"></dc-import>
+                <span style="font-size:12px;color:var(--muted)">+ a second platform admin (requester excluded)</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ crRoles }}" as="r"><code style="font:500 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:5px;background:var(--surface2)">+ {{ r }}</code></sc-for></div>
+          </div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.5">No roles changed. TideCloak cannot apply role changes without threshold signatures.</div>
+        </div>
+        <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--surface2)">
+          <button onClick="{{ withdraw }}" style="height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Withdraw request</button>
+          <button onClick="{{ close }}" style="height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Close</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+</sc-if>
+
+<sc-if value="{{ isData }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="R3 Data browser" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:18px;max-width:1700px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Data</span><code style="font:500 13px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:6px;background:var(--surface2);border:1px solid var(--border)">merchants</code><span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">48,201 rows</span>
+      <span style="flex:1"></span>
+      <button onClick="{{ toggleCompare }}" style="height:34px;padding:0 14px;border-radius:8px;border:1px solid {{ cmpBd }};background:{{ cmpBg }};color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="width:28px;height:16px;border-radius:8px;background:{{ cmpTrack }};position:relative;display:inline-block"><span style="position:absolute;top:2px;left:{{ cmpKnob }};width:12px;height:12px;border-radius:50%;background:#fff;transition:left 150ms"></span></span>Compare views</button>
+      <button onClick="{{ exportTable }}" style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Export table</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid color-mix(in oklch, var(--accent) 35%, var(--border));background:color-mix(in oklch, var(--accent) 8%, var(--surface));font-size:13.5px">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"></rect><path d="M5 7V5a3 3 0 0 1 6 0v2"></path></svg>
+      <span>You have infrastructure access, not data authority. Encrypted with tag <code style="font-family:'JetBrains Mono',monospace;color:var(--accent)">customer_pii</code>.</span>
+    </div>
+    <sc-if value="{{ compare }}" hint-placeholder-val="{{ false }}">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;animation:cs-in 260ms ease">
+        <sc-for list="{{ views }}" as="v" hint-placeholder-count="3">
+          <div style="border-radius:14px;border:{{ v.bw }} solid {{ v.bd }};background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><dc-import name="IdentityChip" person="{{ v.person }}" size="sm" sub="role" hint-size="160px,26px"></dc-import><span style="font:600 11px 'JetBrains Mono',monospace;color:{{ v.tc }};text-transform:uppercase">{{ v.tag }}</span></div>
+            <span style="font-size:12px;color:var(--muted)">{{ v.note }}</span>
+            <div style="display:grid;grid-template-columns:90px minmax(0,1fr);row-gap:10px;column-gap:12px;align-items:start">
+              <span style="font-size:12px;color:var(--muted)">id</span><code style="font:500 13px 'JetBrains Mono',monospace">mrc_8812</code>
+              <sc-for list="{{ v.fields }}" as="f">
+                <span style="font-size:12px;color:var(--muted)">{{ f.k }}</span>
+                <sc-if value="{{ f.plain }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;font-weight:500">{{ f.v }}</span></sc-if>
+                <sc-if value="{{ f.enc }}" hint-placeholder-val="{{ true }}"><span style="display:flex;gap:6px;font:400 11.5px/1.45 'JetBrains Mono',monospace;color:var(--muted);opacity:.75;word-break:break-all"><span>🔒</span><span>{{ f.v }}</span></span></sc-if>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <div style="border-radius:12px;border:1px solid var(--border);background:var(--surface);overflow:hidden">
+      <div style="display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);gap:16px;padding:10px 18px;border-bottom:1px solid var(--border);font:500 12px 'JetBrains Mono',monospace;color:var(--muted)"><span>id</span><span>name 🔒</span><span>bank_account 🔒</span><span>tax_id 🔒</span></div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:110px minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);gap:16px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:center">
+          <code style="font:500 12.5px 'JetBrains Mono',monospace">{{ r.id }}</code>
+          <span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted);opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</span>
+          <span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted);opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.bank }}</span>
+          <span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted);opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.tax }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAudit }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="R4 Audit log" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:18px;max-width:1400px">
+    <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Audit</span>
+    <div style="border-radius:12px;border:1px solid var(--border);background:var(--surface)">
+      <div style="display:grid;grid-template-columns:80px 130px 170px minmax(0,1fr) 90px 40px;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)"><span>Time</span><span>Actor</span><span>Action</span><span>Target</span><span>Outcome</span><span></span></div>
+      <sc-for list="{{ audit }}" as="a" hint-placeholder-count="6">
+        <div style="position:relative;display:grid;grid-template-columns:80px 130px 170px minmax(0,1fr) 90px 40px;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);align-items:center;font-size:13px">
+          <code style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">{{ a.ts }}</code>
+          <span style="font-weight:500">{{ a.actor }}</span>
+          <code style="font:500 12px 'JetBrains Mono',monospace">{{ a.action }}</code>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.target }}</span>
+          <span style="font:600 11px 'JetBrains Mono',monospace;color:{{ a.c }};text-transform:uppercase">{{ a.outcome }}</span>
+          <button onClick="{{ a.onMenu }}" style="width:30px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer">⋯</button>
+          <sc-if value="{{ a.menuOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;right:18px;top:40px;z-index:5;border-radius:9px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);overflow:hidden;min-width:170px">
+              <button style="width:100%;height:34px;border:none;background:transparent;color:var(--text);text-align:left;padding:0 14px;font:500 13px Inter,sans-serif;cursor:pointer" style-hover="background:var(--surface2)">Copy event ID</button>
+              <button onClick="{{ a.onDelete }}" style="width:100%;height:34px;border:none;background:transparent;color:var(--refused);text-align:left;padding:0 14px;font:500 13px Inter,sans-serif;cursor:pointer" style-hover="background:var(--surface2)">Delete event</button>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { menu: null };
+  componentDidMount() {
+    const go = () => { this.unsub = window.CosignStore.subscribe(() => this.forceUpdate()); this.forceUpdate(); };
+    window.CosignStore ? go() : window.addEventListener('cosign:ready', go, { once: true });
+  }
+  componentWillUnmount() { this.unsub && this.unsub(); }
+  renderVals() {
+    const St = window.CosignStore;
+    if (!St) return { isUsers: false };
+    const S = St.getState(), A = St.actions, sel = St.sel, D = St.data, P = D.PEOPLE;
+    const scr = S.screens.dave;
+    const ROLES = { atlas: ['agent-runtime', 'deploy.rollback', 'logs.read'], linh: ['oncall-sre', 'approver'], marcus: ['security-lead', 'approver', 'policy-proposer'], dave: ['platform-admin', 'approver'], priya: ['compliance-reader'] };
+    const LAST = { atlas: '03:12 · active', linh: '03:09', marcus: '03:15', dave: '03:19', priya: 'yesterday' };
+    const cr195 = S.requests['CR-0195'], cr194 = S.requests['CR-0194'];
+    const users = D.ROLE_ORDER.map(id => {
+      const pend = id === 'atlas' && cr195 && cr195.status === 'pending' ? 'CR-0195' : id === 'dave' && cr194 && cr194.status === 'pending' ? 'CR-0194' : '';
+      return { person: P[id], type: P[id].agent ? 'agent' : 'human', typeC: P[id].agent ? 'var(--agent)' : 'var(--muted)', roles: ROLES[id], last: LAST[id], hasPending: !!pend, pending: pend,
+        onEdit: id === 'atlas' ? A.daveOpen : () => {}, editC: id === 'atlas' ? 'var(--text)' : 'var(--muted)' };
+    });
+    const DESC = { 'agent-runtime': 'Run as on-call agent', 'deploy.rollback': 'Roll back deploys (T0)', 'logs.read': 'Read service logs', 'realm-admin': 'Full realm administration', '_tide_customer_pii.selfdecrypt': 'Self-decrypt customer PII' };
+    const base = ['agent-runtime', 'deploy.rollback', 'logs.read'];
+    const ticks = Object.keys(DESC).map(r => {
+      const on = !!S.dave.ticks[r], isNew = on && !base.includes(r);
+      return { role: r, desc: DESC[r], isNew, mark: on ? '✓' : '', onClick: () => A.daveToggle(r),
+        bd: isNew ? 'color-mix(in oklch, var(--pending) 50%, var(--border))' : 'var(--border)', bg: isNew ? 'color-mix(in oklch, var(--pending) 6%, var(--surface))' : 'var(--surface)',
+        boxBd: on ? 'var(--accent)' : 'var(--border)', boxBg: on ? 'var(--accent)' : 'transparent' };
+    });
+    const hasCR = !!S.dave.cr && S.requests[S.dave.cr] && S.requests[S.dave.cr].status === 'pending';
+    const m = D.MERCHANTS[0];
+    const enc = k => D.cipher('mrc_8812' + k, 40);
+    const fields = plain => [['name', m.name], ['bank_account', m.bank], ['tax_id', m.tax]].map(([k, v]) => ({ k, v: plain ? v : enc(k), plain, enc: !plain }));
+    const extra = ['mrc_8870', 'mrc_8874', 'mrc_8881', 'mrc_8890', 'mrc_8902'];
+    const rows = [...D.RECORD_IDS, ...extra].map(id => ({ id, name: D.cipher(id + 'name', 24), bank: D.cipher(id + 'bank', 32), tax: D.cipher(id + 'tax', 20) }));
+    const oc = o => o === 'allowed' || o === 'signed' ? 'var(--ok)' : o === 'pending' ? 'var(--pending)' : 'var(--refused)';
+    const audit = S.audit.map((a, i) => ({ ...a, actor: sel.person(a.actor).name, c: oc(a.outcome), menuOpen: this.state.menu === i, onMenu: () => this.setState(s => ({ menu: s.menu === i ? null : i })), onDelete: () => { this.setState({ menu: null }); A.auditDelete(i); } })).reverse();
+    return {
+      isUsers: scr === 'users', isData: scr === 'data', isAudit: scr === 'audit',
+      users, drawer: S.dave.drawer, close: A.daveClose, ticks, save: A.daveSave,
+      noCR: !hasCR, hasCR, crSeal: [], crRoles: hasCR ? S.requests[S.dave.cr].roles : [], withdraw: () => A.withdraw(S.dave.cr),
+      linh: P.linh, marcus: P.marcus,
+      compare: S.compare, toggleCompare: A.toggleCompare, exportTable: A.exportTable,
+      cmpBd: S.compare ? 'var(--accent)' : 'var(--border)', cmpBg: S.compare ? 'color-mix(in oklch, var(--accent) 10%, var(--surface))' : 'var(--surface)', cmpTrack: S.compare ? 'var(--accent)' : 'var(--border)', cmpKnob: S.compare ? '14px' : '2px',
+      views: [
+        { person: P.dave, tag: 'ciphertext', tc: 'var(--muted)', note: 'Platform Admin · infrastructure access, no data role', fields: fields(false), bd: 'var(--border)', bw: '1px' },
+        { person: P.atlas, tag: 'plaintext', tc: 'var(--agent)', note: 'During granted window 03:22–03:28 · in-session decrypt', fields: fields(true), bd: 'var(--agent)', bw: '2px' },
+        { person: P.linh, tag: 'ciphertext', tc: 'var(--muted)', note: 'On-call SRE · approver, but no decrypt role', fields: fields(false), bd: 'var(--border)', bw: '1px' },
+      ],
+      rows, audit,
+    };
+  }
+}
+</script>
+</body>
+</html>

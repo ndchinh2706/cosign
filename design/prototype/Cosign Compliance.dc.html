@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:absolute;inset:0;overflow:auto;background:var(--bg)">
+<sc-if value="{{ isAudit }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="C1 Audit trail" style="min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) {{ sideW }}">
+    <div style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:16px;min-width:0">
+      <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Audit trail</span>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <sc-for list="{{ filters }}" as="g">
+          <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:8px;border:1px solid var(--border);background:var(--surface)">
+            <span style="font-size:11.5px;color:var(--muted);padding:0 8px">{{ g.label }}</span>
+            <sc-for list="{{ g.opts }}" as="o"><button onClick="{{ o.onClick }}" style="height:26px;padding:0 10px;border:none;border-radius:6px;background:{{ o.bg }};color:{{ o.fg }};font:600 12px Inter,sans-serif;cursor:pointer">{{ o.label }}</button></sc-for>
+          </div>
+        </sc-for>
+        <span style="height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;font:500 12px 'JetBrains Mono',monospace;color:var(--muted)">INC-2417</span>
+        <span style="height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;font:500 12px 'JetBrains Mono',monospace;color:var(--muted)">Oct 22 · 03:00 – 04:00</span>
+      </div>
+      <div style="border-radius:12px;border:1px solid var(--border);background:var(--surface);overflow:hidden">
+        <sc-for list="{{ events }}" as="e" hint-placeholder-count="8">
+          <button onClick="{{ e.onClick }}" style="width:100%;display:grid;grid-template-columns:76px 24px 120px 170px minmax(0,1fr) 84px 96px;gap:12px;align-items:center;padding:10px 16px;border:none;border-bottom:1px solid var(--border);background:{{ e.bg }};color:var(--text);text-align:left;cursor:pointer;font-family:inherit" style-hover="background:var(--surface2)">
+            <code style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">{{ e.ts }}</code>
+            <span style="width:16px;height:16px;border-radius:{{ e.r }};background:{{ e.ac }};clip-path:{{ e.clip }}"></span>
+            <span style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.actor }}</span>
+            <code style="font:500 12px 'JetBrains Mono',monospace">{{ e.action }}</code>
+            <span style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ e.target }}</span>
+            <span style="justify-self:start;height:20px;padding:0 7px;border-radius:5px;background:{{ e.obg }};color:{{ e.oc }};font:600 10.5px/20px 'JetBrains Mono',monospace;text-transform:uppercase">{{ e.outcome }}</span>
+            <span title="{{ e.sigTitle }}" style="font:500 11.5px 'JetBrains Mono',monospace;color:var(--ok)">✓ verified</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+      <aside style="border-left:1px solid var(--border);background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600">Event detail</span><button onClick="{{ closeSel }}" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:18px">×</button></div>
+        <pre style="margin:0;padding:14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);font:400 12px/1.6 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all">{{ selJson }}</pre>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Signature</span>
+          <code style="font:500 12px 'JetBrains Mono',monospace">{{ selSig }} (14/20 ORK)</code>
+          <span style="font-size:12.5px;color:var(--muted)">Threshold-signed by Tide network · no single party holds the key</span>
+        </div>
+        <button onClick="{{ verify }}" style="align-self:flex-start;height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:{{ verifyC }};font:600 13px Inter,sans-serif;cursor:pointer">{{ verifyLabel }}</button>
+      </aside>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isReceipts }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="C2 Access receipt" style="padding:28px 32px 100px;display:flex;flex-direction:column;align-items:center;gap:18px">
+    <div style="width:100%;max-width:900px;display:flex;align-items:center;gap:10px" data-noprint="1">
+      <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Access Receipts</span><span style="flex:1"></span>
+      <button onClick="{{ print }}" style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Export PDF</button>
+      <button onClick="{{ share }}" style="height:34px;padding:0 14px;border-radius:8px;border:none;background:var(--accent);color:#0B0D12;font:600 13px Inter,sans-serif;cursor:pointer">{{ shareLabel }}</button>
+    </div>
+    <sc-if value="{{ draft }}" hint-placeholder-val="{{ false }}"><div style="width:100%;max-width:900px;padding:10px 14px;border-radius:9px;background:color-mix(in oklch, var(--pending) 10%, transparent);border:1px solid color-mix(in oklch, var(--pending) 40%, transparent);font-size:13px">Draft · incident still open. Receipt finalizes when access is returned.</div></sc-if>
+    <article style="width:100%;max-width:900px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:40px 44px;display:flex;flex-direction:column;gap:28px">
+      <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:22px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;flex-direction:column;gap:6px"><span style="font:500 11px 'JetBrains Mono',monospace;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase">Northwind Pay · Cosign</span><span style="font-size:26px;font-weight:600;letter-spacing:-0.02em">Access Receipt · INC-2417</span><span style="font-size:13px;color:var(--muted)">payments-api 502s · SEV-1 · Oct 22, 03:12 – 03:31</span></div>
+        <svg width="40" height="40" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="11" stroke="var(--border)" stroke-width="3"></circle><path d="M14 3a11 11 0 0 1 10.4 14.6" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path><path d="M22.2 21.4A11 11 0 0 1 4 18" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path></svg>
+      </header>
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Summary</span>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+          <sc-for list="{{ summary }}" as="s"><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--muted)">{{ s.k }}</span><span style="font-size:14px;font-weight:500;word-break:break-word">{{ s.v }}</span></div></sc-for>
+        </div>
+      </section>
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Approvals · CR-0192</span>
+        <div style="display:flex;align-items:center;gap:28px">
+          <dc-import name="QuorumSeal" required="{{ 2 }}" approvals="{{ seal }}" size="{{ 96 }}" hint-size="96px,96px"></dc-import>
+          <div style="display:flex;flex-direction:column;gap:10px;flex:1">
+            <sc-if value="{{ noApprovals }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--muted)">No approvals yet.</span></sc-if>
+            <sc-for list="{{ approvals }}" as="a"><div style="display:flex;align-items:center;gap:14px"><dc-import name="IdentityChip" person="{{ a.person }}" size="sm" sub="role" hint-size="170px,26px"></dc-import><span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">signed {{ a.at }}</span><span style="flex:1"></span><code style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted)">{{ a.sig }}</code></div></sc-for>
+          </div>
+        </div>
+      </section>
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Data accessed</span>
+        <div style="display:grid;grid-template-columns:140px minmax(0,1fr);row-gap:10px;font-size:13.5px">
+          <span style="color:var(--muted)">Records</span><div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ recordIds }}" as="id"><code style="font:500 12px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:5px;background:var(--surface2)">{{ id }}</code></sc-for></div>
+          <span style="color:var(--muted)">Fields</span><code style="font:400 12.5px 'JetBrains Mono',monospace">name, settlement_bank, payout_currency, last_3_tx</code>
+          <span style="color:var(--muted)">Accessed by</span><span>Atlas (ai-oncall-agent) · in-session decrypt only</span>
+          <span style="color:var(--muted)">Actual use</span><span style="font-family:'JetBrains Mono',monospace">{{ actualUse }}</span>
+        </div>
+      </section>
+      <section style="display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Blocked attempts · {{ blockedCount }}</span>
+        <sc-for list="{{ blocked }}" as="b"><div style="display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:9px;background:color-mix(in oklch, var(--refused) 7%, var(--surface2))"><code style="font:600 12px 'JetBrains Mono',monospace">{{ b.id }}</code><span style="flex:1;font-size:13.5px">{{ b.text }}</span><span style="font:600 11px 'JetBrains Mono',monospace;color:var(--refused)">BLOCKED</span></div></sc-for>
+      </section>
+      <section style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Signatures</span>
+        <sc-for list="{{ sigs }}" as="s"><div style="display:flex;gap:12px;font:400 12px 'JetBrains Mono',monospace"><span style="color:var(--muted);width:70px">{{ s.ts }}</span><span style="flex:1">{{ s.label }}</span><span style="color:var(--muted)">{{ s.sig }}</span></div></sc-for>
+      </section>
+      <footer style="padding-top:18px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)">Generated from threshold-signed audit events. No single party could have altered this record.</footer>
+    </article>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { verifying: false, verified: false, shared: false };
+  componentDidMount() {
+    const go = () => { this.unsub = window.CosignStore.subscribe(() => this.forceUpdate()); this.forceUpdate(); };
+    window.CosignStore ? go() : window.addEventListener('cosign:ready', go, { once: true });
+  }
+  componentWillUnmount() { this.unsub && this.unsub(); }
+  renderVals() {
+    const St = window.CosignStore;
+    if (!St) return { isAudit: false };
+    const S = St.getState(), A = St.actions, sel = St.sel, D = St.data, P = D.PEOPLE;
+    const scr = S.screens.priya;
+    const f = S.auditFilter;
+    const isAgent = a => a === 'atlas';
+    const isHuman = a => !!P[a] && !P[a].agent;
+    const outcomeGroup = o => o === 'allowed' || o === 'signed' ? 'allowed' : o === 'pending' ? 'pending' : 'refused';
+    const oc = g => g === 'allowed' ? 'var(--ok)' : g === 'pending' ? 'var(--pending)' : 'var(--refused)';
+    const all = [...S.audit].map((a, i) => ({ a, i })).sort((x, y) => x.a.ts.localeCompare(y.a.ts));
+    const filtered = all.filter(({ a }) => (f.actor === 'all' || (f.actor === 'agent' ? isAgent(a.actor) : f.actor === 'human' ? isHuman(a.actor) : true)) && (f.outcome === 'all' || outcomeGroup(a.outcome) === f.outcome));
+    const events = filtered.map(({ a, i }) => {
+      const g = outcomeGroup(a.outcome), p = sel.person(a.actor);
+      const chain = !!a.cr || /rollback|decrypt|injection|revoke|grant/.test(a.action);
+      return { ts: a.ts, actor: p.name, action: a.action, target: a.target, outcome: a.outcome, oc: oc(g), obg: `color-mix(in oklch, ${oc(g)} 14%, transparent)`,
+        ac: p.agent ? 'var(--agent)' : p.system ? 'var(--muted)' : p.color, r: p.agent ? '0' : '50%', clip: p.agent ? 'polygon(25% 4%,75% 4%,100% 50%,75% 96%,25% 96%,0 50%)' : 'none',
+        sigTitle: `${a.sig} (14/20 ORK) · signers: Tide network threshold`,
+        bg: S.auditSel === i ? 'color-mix(in oklch, var(--accent) 10%, var(--surface))' : chain ? 'color-mix(in oklch, var(--accent) 3%, var(--surface))' : 'var(--surface)',
+        onClick: () => { this.setState({ verified: false }); A.selectAudit(i); } };
+    });
+    const selA = S.auditSel != null ? S.audit[S.auditSel] : null;
+    const mk = (key, label, opts) => ({ label, opts: opts.map(([v, l]) => ({ label: l, onClick: () => A.setAuditFilter(key, v), bg: f[key] === v ? 'var(--surface2)' : 'transparent', fg: f[key] === v ? 'var(--text)' : 'var(--muted)' })) });
+    const cr = S.requests['CR-0192'];
+    const blocked = [];
+    if (S.requests['CR-0193']) blocked.push({ id: 'CR-0193', text: 'Injection-driven role grant · realm-admin → Atlas' });
+    if (S.requests['CR-0194']) blocked.push({ id: 'CR-0194', text: 'Admin self-grant · customer_pii.selfdecrypt → Dave Kim' });
+    if (S.requests['CR-0195']) blocked.push({ id: 'CR-0195', text: 'Admin role edit on ai-oncall-agent · converted to change request' });
+    const sigs = S.audit.filter(a => a.cr === 'CR-0192' || a.action === 'grant' || a.action === 'revoke').map(a => ({ ts: a.ts, label: a.action + ' · ' + a.target, sig: a.sig }));
+    const finished = !!S.grant.revokedAt;
+    return {
+      isAudit: scr === 'audit', isReceipts: scr === 'receipts',
+      filters: [mk('actor', 'Actor', [['all', 'All'], ['human', 'Human'], ['agent', 'Agent']]), mk('outcome', 'Outcome', [['all', 'All'], ['allowed', 'Allowed'], ['refused', 'Refused'], ['pending', 'Pending']])],
+      events, hasSel: !!selA, sideW: selA ? '380px' : '0px', closeSel: () => A.selectAudit(S.auditSel),
+      selJson: selA ? JSON.stringify({ ts: '2026-10-22T' + selA.ts + 'Z', actor: selA.actor, action: selA.action, target: selA.target, outcome: selA.outcome, incident: 'INC-2417', change_request: selA.cr || null }, null, 2) : '',
+      selSig: selA ? selA.sig : '',
+      verify: () => { this.setState({ verifying: true }); setTimeout(() => this.setState({ verifying: false, verified: true }), 900); },
+      verifyLabel: this.state.verifying ? 'Verifying… 14/20' : this.state.verified ? '✓ Signature valid' : 'Verify again', verifyC: this.state.verified ? 'var(--ok)' : 'var(--text)',
+      draft: !finished,
+      summary: [{ k: 'Who', v: 'Atlas (AI agent)' }, { k: 'What', v: 'customer_pii.selfdecrypt · 5 records' }, { k: 'When', v: cr && cr.status === 'approved' ? '03:22 – 03:28' : '—' }, { k: 'Outcome', v: finished ? 'Released early at 03:28' : 'In progress' }],
+      seal: cr ? cr.approvals.map(a => ({ initials: P[a.who].initials, color: P[a.who].color })) : [],
+      approvals: cr ? cr.approvals.map(a => ({ person: P[a.who], at: a.at, sig: a.sig })) : [], noApprovals: !cr || !cr.approvals.length,
+      recordIds: D.RECORD_IDS, actualUse: finished ? '5m50s of 15m granted · released early' : S.grant.active ? 'in use · ' + sel.countdown() + ' remaining' : '—',
+      blocked: blocked.slice(0, 2), blockedCount: Math.min(2, blocked.length), sigs,
+      print: A.receiptPrint, share: () => this.setState({ shared: true }), shareLabel: this.state.shared ? '✓ Link sent to auditor' : 'Share with auditor',
+    };
+  }
+}
+</script>
+</body>
+</html>

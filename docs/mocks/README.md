@@ -1,6 +1,6 @@
 # docs/mocks — mock response cho frontend
 
-Mỗi file là **body response** của một endpoint trong `docs/API.md` §5 (không bọc thêm). Dữ liệu dùng đúng sample của `COSIGN-SCREENS.md` §10 (Northwind Pay, INC-2417, run_01, CR-0192…CR-0195, 5 merchant `mrc_*`). Sinh bởi một script duy nhất nên các ID, timestamp, hash chain nhất quán giữa các file.
+Mỗi file là **body response** của một endpoint trong `docs/API.md` §5 (không bọc thêm). Dữ liệu dùng đúng sample của `docs/planning/COSIGN-SCREENS.md` §10 (Northwind Pay, INC-2417, run_01, CR-0192…CR-0195, 5 merchant `mrc_*`). Sinh bởi một script duy nhất nên các ID, timestamp, hash chain nhất quán giữa các file.
 
 ## Cách frontend dùng
 

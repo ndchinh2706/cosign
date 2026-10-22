@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <title>Cosign — Production access for AI agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script type="module" src="cosign/store.js"></script>
+  <style>
+    html,body{margin:0;padding:0;height:100%;background:#0B0D12;font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+    *{box-sizing:border-box}
+    [data-theme="dark"]{--bg:#0B0D12;--surface:#12151C;--surface2:#191D26;--border:#252A35;--text:#E6E8EE;--muted:#8A92A3;--accent:#7C9CFF;--ok:#3DD68C;--pending:#F5B83D;--refused:#FF5C6C;--agent:#B48CFF;--warn:#FF9F43;--shadow:0 12px 40px rgba(0,0,0,.45);color-scheme:dark}
+    [data-theme="light"]{--bg:#F6F7F9;--surface:#FFFFFF;--surface2:#F0F2F5;--border:#E2E5EB;--text:#12151C;--muted:#5B6475;--accent:#3D5FE0;--ok:#12A05C;--pending:#B97A00;--refused:#D92D3F;--agent:#7A4FD6;--warn:#C86A0A;--shadow:0 12px 40px rgba(20,24,34,.14);color-scheme:light}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    ::selection{background:color-mix(in oklch, var(--accent) 35%, transparent)}
+    ::-webkit-scrollbar{width:10px;height:10px}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+    @keyframes cs-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+    @keyframes cs-spin{to{transform:rotate(360deg)}}
+    @keyframes cs-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    @media print{[data-noprint]{display:none !important}}
+  </style>
+</helmet>
+<div data-theme="{{ theme }}" style="position:fixed;inset:0;display:flex;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;font-size:14px;overflow:hidden">
+  <sc-if value="{{ showSignIn }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="S1 Sign-in" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:40px;background:radial-gradient(1200px 700px at 50% 30%, color-mix(in oklch, var(--accent) 10%, var(--bg)) 0%, var(--bg) 70%);padding:40px">
+      <div style="width:440px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:36px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:24px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="11" stroke="var(--border)" stroke-width="3"></circle><path d="M14 3a11 11 0 0 1 10.4 14.6" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path><path d="M22.2 21.4A11 11 0 0 1 4 18" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path></svg>
+          <span style="font-size:18px;font-weight:700;letter-spacing:-0.01em">Cosign</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Sign in to Northwind Pay · Cosign</div>
+          <div style="color:var(--muted);font-size:13.5px">Production access for AI agents, without god keys.</div>
+        </div>
+        <sc-if value="{{ authIdle }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <label style="display:flex;flex-direction:column;gap:6px">
+              <span style="font-size:12px;color:var(--muted);font-weight:500">Username</span>
+              <input value="{{ username }}" onChange="{{ onUsername }}" style="height:42px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);padding:0 12px;font:500 14px 'JetBrains Mono',monospace;outline:none"></input>
+            </label>
+            <button onClick="{{ onContinue }}" style="height:44px;border:none;border-radius:8px;background:var(--accent);color:#0B0D12;font:600 14px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px" style-hover="filter:brightness(1.08)">Continue with Tide</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ authProving }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px;padding:6px 0">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--accent);animation:cs-spin 800ms linear infinite"></div>
+              <span style="font-size:14px">Proving identity to Tide network… <span style="font-family:'JetBrains Mono',monospace;color:var(--accent)">{{ authNodes }}/20 nodes</span></span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(20,1fr);gap:4px">
+              <sc-for list="{{ authDots }}" as="d" hint-placeholder-count="20"><div style="height:6px;border-radius:2px;background:{{ d.c }};transition:background 200ms"></div></sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ authSuccess }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 0;color:var(--ok);font-weight:600">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="9" r="7.5"></circle><path d="M5.5 9.3l2.3 2.3 4.6-4.8"></path></svg>
+            <span>Identity proven · 14/20 nodes signed</span>
+          </div>
+        </sc-if>
+        <div style="display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--border);padding-top:16px">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1.8l5.2 2v4c0 3.2-2.3 5.4-5.2 6.4-2.9-1-5.2-3.2-5.2-6.4v-4z"></path></svg>
+          <span>Zero-knowledge sign-in · no password is stored on any server.</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px" data-noprint="1">
+        <div style="font:500 11px 'JetBrains Mono',monospace;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase">Demo · quick login</div>
+        <div style="display:flex;gap:10px">
+          <sc-for list="{{ quick }}" as="q" hint-placeholder-count="5">
+            <button onClick="{{ q.onClick }}" style="display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;color:var(--text);text-align:left;font-family:inherit" style-hover="border-color:var(--accent)">
+              <dc-import name="IdentityChip" person="{{ q.person }}" size="sm" sub="role" hint-size="150px,30px"></dc-import>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showApp }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-width:0;display:flex;position:relative">
+      <aside style="width:{{ sideW }};flex:none;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;transition:width 200ms ease">
+        <div style="height:56px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid var(--border)">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none" style="flex:none"><circle cx="14" cy="14" r="11" stroke="var(--border)" stroke-width="3"></circle><path d="M14 3a11 11 0 0 1 10.4 14.6" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path><path d="M22.2 21.4A11 11 0 0 1 4 18" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path></svg>
+          <sc-if value="{{ sideOpen }}" hint-placeholder-val="{{ true }}"><span style="font-size:16px;font-weight:700;letter-spacing:-0.01em">Cosign</span></sc-if>
+        </div>
+        <sc-if value="{{ sideOpen }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:16px 18px 8px;font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">{{ roleTitle }}</div>
+        </sc-if>
+        <nav style="display:flex;flex-direction:column;gap:2px;padding:8px 10px;flex:1">
+          <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3">
+            <button onClick="{{ n.onClick }}" title="{{ n.label }}" style="display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border:none;border-radius:8px;background:{{ n.bg }};color:{{ n.fg }};font:500 13.5px Inter,sans-serif;cursor:pointer;text-align:left" style-hover="background:var(--surface2)">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ n.icon }}"></path></svg>
+              <sc-if value="{{ sideOpen }}" hint-placeholder-val="{{ true }}"><span style="flex:1">{{ n.label }}</span></sc-if>
+              <sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--pending);color:#0B0D12;font:700 11px/18px Inter,sans-serif;text-align:center">{{ n.badge }}</span></sc-if>
+            </button>
+          </sc-for>
+        </nav>
+        <div style="border-top:1px solid var(--border);padding:12px 10px;display:flex;flex-direction:column;gap:4px">
+          <sc-if value="{{ sideOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="padding:6px 10px;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:12.5px;font-weight:600">Northwind Pay</span>
+              <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">realm: northwind-prod</span>
+            </div>
+          </sc-if>
+          <button onClick="{{ toggleSide }}" style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font:500 12.5px Inter,sans-serif;cursor:pointer" style-hover="background:var(--surface2)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2.5" width="12" height="11" rx="2"></rect><path d="M6 2.5v11"></path></svg>
+            <sc-if value="{{ sideOpen }}" hint-placeholder-val="{{ true }}"><span>Collapse</span></sc-if>
+          </button>
+          <button onClick="{{ signOut }}" style="display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:var(--muted);font:500 12.5px Inter,sans-serif;cursor:pointer" style-hover="background:var(--surface2)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 2.5H3.5v11H6M10 5l3 3-3 3M13 8H6.5"></path></svg>
+            <sc-if value="{{ sideOpen }}" hint-placeholder-val="{{ true }}"><span>Sign out</span></sc-if>
+          </button>
+        </div>
+      </aside>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+        <header style="height:56px;flex:none;display:flex;align-items:center;gap:16px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface)">
+          <sc-if value="{{ incidentActive }}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{ openIncident }}" style="display:flex;align-items:center;gap:9px;height:32px;padding:0 12px;border-radius:8px;border:1px solid color-mix(in oklch, var(--refused) 35%, transparent);background:color-mix(in oklch, var(--refused) 10%, transparent);color:var(--text);font:500 12.5px Inter,sans-serif;cursor:pointer;white-space:nowrap">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--refused);animation:cs-pulse 1.6s ease-in-out infinite"></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:600">INC-2417</span><span style="color:var(--muted)">·</span><span>payments-api {{ incidentWord }}</span><span style="color:var(--muted)">·</span><span style="font-family:'JetBrains Mono',monospace;color:var(--muted)">03:12</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{ incidentResolved }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:9px;height:32px;padding:0 12px;border-radius:8px;border:1px solid color-mix(in oklch, var(--ok) 35%, transparent);background:color-mix(in oklch, var(--ok) 10%, transparent);font:500 12.5px Inter,sans-serif;white-space:nowrap">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--ok)"></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:600">INC-2417</span><span style="color:var(--muted)">·</span><span>resolved</span><span style="color:var(--muted)">·</span><span style="font-family:'JetBrains Mono',monospace;color:var(--muted)">03:31</span>
+            </div>
+          </sc-if>
+          <div style="flex:1;max-width:380px;height:32px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12.5px;min-width:120px">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+            <span style="flex:1;white-space:nowrap;overflow:hidden">Search incidents, requests, identities</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;border:1px solid var(--border);border-radius:4px;padding:1px 5px">⌘K</span>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;border:1px solid var(--border);background:var(--surface2)" data-noprint="1">
+            <span style="font:500 10.5px 'JetBrains Mono',monospace;color:var(--muted);padding:0 8px 0 6px;letter-spacing:0.06em">DEMO</span>
+            <sc-for list="{{ roles }}" as="r" hint-placeholder-count="5">
+              <button onClick="{{ r.onClick }}" style="height:26px;padding:0 11px;border:none;border-radius:6px;background:{{ r.bg }};color:{{ r.fg }};font:600 12.5px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background 150ms">
+                <span style="width:7px;height:7px;border-radius:{{ r.dotR }};background:{{ r.color }}"></span>{{ r.label }}
+              </button>
+            </sc-for>
+          </div>
+          <button onClick="{{ togglePhone }}" title="Show phone (E5)" style="width:34px;height:34px;border-radius:8px;border:1px solid {{ phoneBorder }};background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center" data-noprint="1">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="1.5" width="8" height="13" rx="2"></rect><path d="M7 12.2h2"></path></svg>
+          </button>
+          <button onClick="{{ toggleTheme }}" title="Toggle theme" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center" data-noprint="1">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 2.5v11a5.5 5.5 0 0 0 0-11z" fill="currentColor"></path></svg>
+          </button>
+          <button onClick="{{ toggleDrawer }}" title="Notifications" style="position:relative;width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.2 1.5H2.8zM6.5 14h3"></path></svg>
+            <sc-if value="{{ hasNotif }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--refused);color:#fff;font:700 10.5px/18px Inter,sans-serif;text-align:center;box-shadow:0 0 0 2px var(--surface)">{{ notifCount }}</span></sc-if>
+          </button>
+          <dc-import name="IdentityChip" person="{{ me }}" size="sm" sub="role" hint-size="140px,30px"></dc-import>
+        </header>
+        <main style="flex:1;min-height:0;position:relative;overflow:hidden">
+          <sc-if value="{{ isAtlas }}" hint-placeholder-val="{{ false }}"><dc-import name="Cosign Agent" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import></sc-if>
+          <sc-if value="{{ isLinh }}" hint-placeholder-val="{{ false }}"><dc-import name="Cosign SRE" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import></sc-if>
+          <sc-if value="{{ isMarcus }}" hint-placeholder-val="{{ false }}"><dc-import name="Cosign Security" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import></sc-if>
+          <sc-if value="{{ isDave }}" hint-placeholder-val="{{ false }}"><dc-import name="Cosign Admin" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import></sc-if>
+          <sc-if value="{{ isPriya }}" hint-placeholder-val="{{ false }}"><dc-import name="Cosign Compliance" hint-size="100%,100%" style="position:absolute;inset:0"></dc-import></sc-if>
+        </main>
+      </div>
+
+      <sc-if value="{{ drawer }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ toggleDrawer }}" style="position:absolute;inset:0;background:rgba(5,6,10,.35);z-index:40"></div>
+        <div data-screen-label="S3 Notifications" style="position:absolute;top:0;right:0;bottom:0;width:440px;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadow);z-index:41;display:flex;flex-direction:column;animation:cs-in 200ms ease">
+          <div style="height:56px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid var(--border)">
+            <span style="font-size:15px;font-weight:600">Notifications</span>
+            <button onClick="{{ toggleDrawer }}" style="width:28px;height:28px;border:none;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:18px">×</button>
+          </div>
+          <div style="flex:1;overflow:auto;padding:16px 20px;display:flex;flex-direction:column;gap:22px">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)">Needs your approval</div>
+              <sc-if value="{{ noApprovals }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:var(--muted);padding:8px 0">Nothing waiting on you.</div></sc-if>
+              <sc-for list="{{ approvalsN }}" as="a" hint-placeholder-count="1">
+                <div style="display:flex;gap:12px;padding:14px;border-radius:10px;border:1px solid color-mix(in oklch, var(--pending) 35%, var(--border));background:var(--surface2)">
+                  <dc-import name="IdentityChip" person="{{ a.requester }}" size="md" avatar-only="{{ true }}" hint-size="32px,32px"></dc-import>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+                    <div style="font-size:13px;line-height:1.45"><b>{{ a.requester.name }}</b> requests <code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--agent)">{{ a.cap }}</code> · {{ a.scopeText }}</div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <dc-import name="RiskChip" tier="{{ a.tier }}" elevated="{{ a.elevated }}" hide-reason="{{ true }}" hint-size="90px,22px"></dc-import>
+                      <span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted)">{{ a.id }}</span>
+                    </div>
+                  </div>
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                    <dc-import name="QuorumSeal" required="{{ a.required }}" approvals="{{ a.seal }}" size="{{ 38 }}" hint-size="38px,38px"></dc-import>
+                    <button onClick="{{ a.onReview }}" style="height:26px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 12px Inter,sans-serif;cursor:pointer">Review</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Agent activity</div>
+              <sc-for list="{{ agentN }}" as="e" hint-placeholder-count="3">
+                <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span style="width:6px;height:6px;margin-top:6px;border-radius:50%;background:{{ e.c }};flex:none"></span>
+                  <div style="flex:1;font:400 12px/1.5 'JetBrains Mono',monospace;color:var(--text)">{{ e.text }}</div>
+                  <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">{{ e.t }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Security</div>
+              <sc-if value="{{ noSecurity }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:var(--muted)">No security events.</div></sc-if>
+              <sc-for list="{{ securityN }}" as="e" hint-placeholder-count="2">
+                <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+                  <span style="width:6px;height:6px;margin-top:6px;border-radius:50%;background:var(--refused);flex:none"></span>
+                  <div style="flex:1;font-size:12.5px;line-height:1.5">{{ e.text }}</div>
+                  <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">{{ e.t }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="position:absolute;top:136px;right:12px;z-index:60;display:flex;flex-direction:column;gap:8px;width:316px;pointer-events:none">
+        <sc-for list="{{ toasts }}" as="t" hint-placeholder-count="0">
+          <div onClick="{{ t.onClick }}" style="pointer-events:auto;display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);font-size:13px;line-height:1.45;animation:cs-in 220ms ease;cursor:pointer">
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ t.c }};margin-top:5px;flex:none"></span><span>{{ t.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ hasSign }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(5,6,10,.55);z-index:70;display:flex;align-items:center;justify-content:center;animation:cs-in 160ms ease">
+          <div data-screen-label="E4 Sign with Tide" style="width:620px;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);overflow:hidden">
+            <div style="padding:22px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font-size:17px;font-weight:600">Sign with Tide</span>
+                <span style="font-size:13px;color:var(--muted)">{{ signSummary }}</span>
+              </div>
+              <button onClick="{{ closeSign }}" style="width:28px;height:28px;border:none;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:18px">×</button>
+            </div>
+            <div style="padding:24px 26px;display:flex;gap:28px;align-items:center">
+              <dc-import name="QuorumSeal" required="{{ signRequired }}" approvals="{{ signSeal }}" size="{{ 150 }}" show-signed="{{ true }}" sig="{{ signSig }}" hint-size="150px,150px"></dc-import>
+              <div style="flex:1;display:flex;flex-direction:column;gap:18px">
+                <div style="display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ signSteps }}" as="s" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <span style="width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:600 11px 'JetBrains Mono',monospace;background:{{ s.bg }};color:{{ s.fg }};border:1px solid {{ s.bd }};transition:all 250ms">{{ s.n }}</span>
+                      <span style="font-size:13.5px;color:{{ s.tc }};font-weight:{{ s.w }}">{{ s.label }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ signShowNodes }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <span style="font-size:12.5px;color:var(--muted)">Collecting threshold signature… <span style="font-family:'JetBrains Mono',monospace;color:var(--accent)">{{ signNodes }} / 20 ORK nodes</span></span>
+                    <div style="display:grid;grid-template-columns:repeat(20,1fr);gap:3px">
+                      <sc-for list="{{ signDots }}" as="d" hint-placeholder-count="20"><div style="height:6px;border-radius:2px;background:{{ d.c }};transition:background 150ms"></div></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ signDone }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:15px;font-weight:600;color:var(--ok)">{{ signDoneText }}</div>
+                </sc-if>
+              </div>
+            </div>
+            <div style="padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;background:var(--surface2)">
+              <sc-if value="{{ signConfirm }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ closeSign }}" style="height:38px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Cancel</button>
+                <button onClick="{{ confirmSign }}" style="height:38px;padding:0 18px;border-radius:8px;border:none;background:var(--accent);color:#0B0D12;font:600 13px Inter,sans-serif;cursor:pointer">Approve &amp; sign</button>
+              </sc-if>
+              <sc-if value="{{ signDone }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ closeSign }}" style="height:38px;padding:0 18px;border-radius:8px;border:none;background:var(--surface);border:1px solid var(--border);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Done</button>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ modalExport }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(5,6,10,.55);z-index:70;display:flex;align-items:center;justify-content:center">
+          <div style="width:520px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:26px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:10px"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"></rect><path d="M5 7V5a3 3 0 0 1 6 0v2"></path></svg><span style="font-size:16px;font-weight:600">Export ready · ciphertext only</span></div>
+            <div style="font-size:14px;line-height:1.55">Export contains 48,201 encrypted rows. Keys are not held by Northwind, the server, or Tide.</div>
+            <div style="font:400 11.5px/1.6 'JetBrains Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;word-break:break-all">merchants_2026-10-22.csv.enc · 48,201 rows · tag customer_pii</div>
+            <div style="display:flex;justify-content:flex-end"><button onClick="{{ closeModal }}" style="height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Close</button></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ modalAudit }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(5,6,10,.55);z-index:70;display:flex;align-items:center;justify-content:center">
+          <div style="width:520px;background:var(--surface);border:1px solid var(--refused);border-radius:14px;box-shadow:var(--shadow);padding:26px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:10px;color:var(--refused)"><svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"></rect><path d="M5 7V5a3 3 0 0 1 6 0v2"></path></svg><span style="font-size:16px;font-weight:600">Deletion refused</span></div>
+            <div style="font-size:14px;line-height:1.55">Audit events are threshold-signed. Deletion requires T3 quorum and is itself recorded.</div>
+            <div style="display:flex;justify-content:flex-end"><button onClick="{{ closeModal }}" style="height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">Close</button></div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div data-noprint="1" style="width:480px;flex:none;border-left:1px solid var(--border);background:color-mix(in oklch, var(--bg) 85%, #000);display:flex;align-items:center;justify-content:center;position:relative">
+      <dc-import name="Cosign Mobile" hint-size="390px,844px"></dc-import>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ demoVisible }}" hint-placeholder-val="{{ false }}">
+    <div data-noprint="1" style="position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:90;display:flex;align-items:center;gap:6px;padding:6px;border-radius:12px;background:color-mix(in oklch, var(--surface) 92%, transparent);border:1px solid var(--border);box-shadow:var(--shadow);backdrop-filter:blur(10px)">
+      <button onClick="{{ demoPrev }}" title="Previous beat (←)" style="width:32px;height:32px;border:none;border-radius:8px;background:transparent;color:var(--text);cursor:pointer" style-hover="background:var(--surface2)">◀</button>
+      <button onClick="{{ demoAuto }}" title="Autoplay (P)" style="height:32px;padding:0 12px;border:none;border-radius:8px;background:{{ autoBg }};color:{{ autoFg }};font:600 12px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px">{{ autoLabel }}</button>
+      <div style="display:flex;flex-direction:column;gap:5px;padding:0 10px;min-width:320px">
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="font:600 12px 'JetBrains Mono',monospace;color:var(--accent)">{{ beatT }}</span><span style="font-size:12.5px;font-weight:500;white-space:nowrap">{{ beatLabel }}</span><span style="flex:1"></span><span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">{{ beatNum }}</span></div>
+        <div style="display:flex;gap:3px">
+          <sc-for list="{{ beatDots }}" as="b" hint-placeholder-count="16"><button onClick="{{ b.onClick }}" title="{{ b.title }}" style="flex:1;height:5px;border:none;padding:0;border-radius:2px;background:{{ b.c }};cursor:pointer"></button></sc-for>
+        </div>
+      </div>
+      <button onClick="{{ demoNext }}" title="Next beat (→)" style="width:32px;height:32px;border:none;border-radius:8px;background:transparent;color:var(--text);cursor:pointer" style-hover="background:var(--surface2)">▶</button>
+      <button onClick="{{ demoHide }}" title="Hide (H)" style="height:32px;padding:0 8px;border:none;border-radius:8px;background:transparent;color:var(--muted);font:500 11px 'JetBrains Mono',monospace;cursor:pointer">H</button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { collapsed: false, username: 'linh.tran' };
+  componentDidMount() {
+    const go = () => { this.unsub = window.CosignStore.subscribe(() => this.forceUpdate()); this.forceUpdate(); };
+    window.CosignStore ? go() : window.addEventListener('cosign:ready', go, { once: true });
+  }
+  componentWillUnmount() { this.unsub && this.unsub(); }
+  renderVals() {
+    const St = window.CosignStore;
+    if (!St) return { theme: 'dark', showSignIn: false, showApp: false };
+    const S = St.getState(), A = St.actions, sel = St.sel, D = St.data;
+    const P = D.PEOPLE;
+    const ICON = {
+      terminal: 'M2.5 4l3.5 3.5L2.5 11M8 12h5.5', key: 'M10 2.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zM7.5 8.5L2.5 13.5M4 12l1.5 1.5',
+      inbox: 'M2 9h3.5l1 2h3l1-2H14M3.5 3h9L14 9v4H2V9z', alert: 'M8 2l6.5 11.5h-13zM8 6.5v3M8 11.5v.2', check: 'M2.5 8.5l3.5 3.5L13.5 4',
+      server: 'M2.5 2.5h11v4.5h-11zM2.5 9h11v4.5h-11zM5 4.75h.1M5 11.25h.1', shield: 'M8 1.8l5.2 2v4c0 3.2-2.3 5.4-5.2 6.4-2.9-1-5.2-3.2-5.2-6.4v-4z',
+      hex: 'M8 1.5l5.6 3.25v6.5L8 14.5l-5.6-3.25v-6.5z', doc: 'M4 1.8h5.5L12.5 5v9.2H4zM9.5 1.8V5h3M6 8.5h4.5M6 11h4.5',
+      users: 'M6 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M11 2.8a2.5 2.5 0 0 1 0 4.6M12.5 9.8c1.3.6 2 2 2 4.2',
+      db: 'M2.5 3.5c0-1 2.5-1.8 5.5-1.8s5.5.8 5.5 1.8v9c0 1-2.5 1.8-5.5 1.8s-5.5-.8-5.5-1.8zM2.5 3.5c0 1 2.5 1.8 5.5 1.8s5.5-.8 5.5-1.8M2.5 8c0 1 2.5 1.8 5.5 1.8s5.5-.8 5.5-1.8',
+      list: 'M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.1M2.5 8h.1M2.5 12h.1',
+    };
+    const role = S.role, scr = S.screens[role];
+    const pending = sel.pendingFor(role);
+    const nav = D.NAV[role].map(([id, label, ic]) => {
+      const active = scr === id || (id === 'incidents' && scr === 'warroom');
+      const badge = id === 'approvals' ? pending.length : id === 'requests' ? sel.openRequests().filter(c => c.requester === 'atlas').length : 0;
+      return { label, icon: ICON[ic], onClick: () => A.go(id), bg: active ? 'var(--surface2)' : 'transparent', fg: active ? 'var(--text)' : 'var(--muted)', hasBadge: badge > 0 && !this.state.collapsed, badge };
+    });
+    const roles = D.ROLE_ORDER.map(id => {
+      const p = P[id], on = id === role;
+      return { label: p.name.split(' ')[0], onClick: () => A.switchRole(id), bg: on ? 'var(--surface)' : 'transparent', fg: on ? 'var(--text)' : 'var(--muted)', color: p.color, dotR: p.agent ? '1px' : '50%' };
+    });
+    const auth = S.auth;
+    const dots = n => Array.from({ length: 20 }, (_, i) => ({ c: i < n ? 'var(--accent)' : 'var(--border)' }));
+    const resolved = S.flags.fix && !!S.grant.revokedAt;
+
+    // notifications
+    const approvalsN = pending.map(cr => ({
+      id: cr.id, requester: sel.person(cr.requester), cap: cr.capability.replace(/^_tide_/, ''), tier: cr.tier, elevated: cr.elevated || '', required: cr.required,
+      scopeText: cr.scope && cr.scope.length ? `${cr.scope.length} records · ${cr.duration} min` : cr.change,
+      seal: cr.approvals.map(a => ({ initials: P[a.who].initials, color: P[a.who].color })),
+      onReview: () => { A.selectCR(cr.id); A.go('approvals'); },
+    }));
+    const evs = D.AGENT_EVENTS.slice(0, S.agent.cursor).filter(e => e.kind === 'tool').slice(-4).reverse();
+    const agentN = evs.map(e => ({ t: e.t.slice(0, 5), text: e.tool, c: e.status === 'ok' ? 'var(--agent)' : 'var(--refused)' }));
+    const securityN = [];
+    if (S.flags.injection) securityN.push({ t: '03:14', text: 'Prompt injection detected in Atlas context (fr · 0.97)' });
+    if (S.requests['CR-0193']) securityN.push({ t: '03:14', text: 'CR-0193 · Atlas attempted realm-admin grant — escalated to T3' });
+    if (S.requests['CR-0194']) securityN.push({ t: '03:20', text: 'CR-0194 · Dave Kim self-grant of customer_pii — flagged unusual' });
+    if (S.requests['CR-0195']) securityN.push({ t: '03:20', text: 'CR-0195 · Admin role edit converted to change request' });
+
+    // sign modal
+    const sg = S.sign, scr0 = sg && S.requests[sg.crId];
+    const phaseIdx = sg ? { confirm: -1, verify: 0, sign: 1, submit: 2, done: 3 }[sg.phase] : -1;
+    const signSteps = ['Verify identity', 'Sign', 'Submit to quorum'].map((label, i) => {
+      const done = phaseIdx > i, act = phaseIdx === i;
+      return { n: done ? '✓' : String(i + 1), label, bg: done ? 'var(--ok)' : act ? 'color-mix(in oklch, var(--accent) 18%, transparent)' : 'transparent', fg: done ? '#0B0D12' : act ? 'var(--accent)' : 'var(--muted)', bd: done ? 'var(--ok)' : act ? 'var(--accent)' : 'var(--border)', tc: done || act ? 'var(--text)' : 'var(--muted)', w: act ? 600 : 500 };
+    });
+    const sealOf = cr => cr ? cr.approvals.map(a => ({ initials: P[a.who].initials, color: P[a.who].color })) : [];
+    const nDone = scr0 ? scr0.approvals.length : 0;
+
+    const beats = St.beats, bi = S.demo.beat;
+    return {
+      theme: S.theme,
+      showSignIn: !S.signedIn, showApp: S.signedIn,
+      authIdle: auth.phase === 'idle', authProving: auth.phase === 'proving', authSuccess: auth.phase === 'success' || auth.phase === 'done',
+      authNodes: auth.nodes, authDots: dots(auth.nodes),
+      username: auth.user ? P[auth.user].handle.split('@')[0] : this.state.username,
+      onUsername: e => this.setState({ username: e.target.value }),
+      onContinue: () => { const u = this.state.username.toLowerCase(); const id = D.ROLE_ORDER.find(r => P[r].handle.startsWith(u) || u.startsWith(r)) || 'linh'; A.signIn(id); },
+      quick: D.ROLE_ORDER.map(id => ({ person: P[id], onClick: () => A.signIn(id) })),
+      sideOpen: !this.state.collapsed, sideW: this.state.collapsed ? '64px' : '232px', toggleSide: () => this.setState(s => ({ collapsed: !s.collapsed })),
+      roleTitle: P[role].role, nav, roles, me: P[role], signOut: A.signOut,
+      incidentActive: !resolved, incidentResolved: resolved, incidentWord: S.flags.rollback ? 'mitigating' : 'degraded',
+      openIncident: () => { if (role === 'linh') A.go('warroom'); else if (role === 'atlas') A.go('console'); },
+      togglePhone: A.togglePhone, phoneBorder: S.phone ? 'var(--accent)' : 'var(--border)', toggleTheme: A.toggleTheme, toggleDrawer: A.toggleDrawer,
+      hasNotif: pending.length + securityN.length > 0, notifCount: pending.length + (role === 'marcus' ? securityN.length : 0) || pending.length || securityN.length,
+      isAtlas: role === 'atlas', isLinh: role === 'linh', isMarcus: role === 'marcus', isDave: role === 'dave', isPriya: role === 'priya',
+      drawer: S.drawer, approvalsN, noApprovals: !approvalsN.length, agentN, securityN, noSecurity: !securityN.length,
+      toasts: S.toasts.map(t => ({ ...t, c: { ok: 'var(--ok)', refused: 'var(--refused)', pending: 'var(--pending)', info: 'var(--accent)' }[t.kind], onClick: () => A.dismissToast(t.id) })),
+      hasSign: !!sg && !!scr0,
+      signSummary: scr0 ? `Approve ${scr0.id} · ${scr0.change} · requested by ${sel.person(scr0.requester).name}` : '',
+      signRequired: scr0 ? scr0.required : 2, signSeal: sealOf(scr0), signSig: scr0 && scr0.approvals.length ? scr0.approvals[scr0.approvals.length - 1].sig : '',
+      signSteps, signShowNodes: sg && (sg.phase === 'sign' || sg.phase === 'submit'), signNodes: sg ? sg.nodes : 0, signDots: dots(sg ? sg.nodes : 0),
+      signConfirm: sg && sg.phase === 'confirm', signDone: sg && sg.phase === 'done',
+      signDoneText: scr0 ? (nDone >= scr0.required ? `Quorum reached · ${nDone} of ${scr0.required} approvals` : `${nDone} of ${scr0.required} approvals · waiting for ${scr0.required - nDone} more`) : '',
+      closeSign: A.closeSign, confirmSign: A.confirmSign,
+      modalExport: S.modal && S.modal.kind === 'export', modalAudit: S.modal && S.modal.kind === 'auditDelete', closeModal: A.closeModal,
+      phone: S.phone,
+      demoVisible: !S.demo.hidden,
+      demoPrev: A.demoPrev, demoNext: A.demoNext, demoAuto: A.demoToggleAuto, demoHide: A.demoHide,
+      autoLabel: S.demo.auto ? '❚❚ Pause demo' : '▶ Play demo', autoBg: S.demo.auto ? 'var(--accent)' : 'var(--surface2)', autoFg: S.demo.auto ? '#0B0D12' : 'var(--text)',
+      beatT: bi >= 0 ? beats[bi].t : '—', beatLabel: bi >= 0 ? beats[bi].label : 'Free mode · ← → to step through the storyboard', beatNum: bi >= 0 ? `${bi + 1}/${beats.length}` : `${beats.length} beats`,
+      beatDots: beats.map((b, i) => ({ title: b.t + ' ' + b.label, onClick: () => A.demoGo(i), c: i === bi ? 'var(--accent)' : i < bi ? 'color-mix(in oklch, var(--accent) 45%, var(--border))' : 'var(--border)' })),
+    };
+  }
+}
+</script>
+</body>
+</html>

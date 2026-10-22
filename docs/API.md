@@ -2,7 +2,7 @@
 
 Tài liệu contract giữa web (Next.js) và api (FastAPI). Frontend code trên mock trước (`docs/mocks/`, `docs/openapi.yaml`), backend cứ theo đây mà làm. Chỗ nào chưa chắc về TideCloak đánh dấu **CẦN KIỂM CHỨNG** và đặt sau adapter `TideGovernance`.
 
-Tham chiếu: `IDEA-COSIGN.md` (ý tưởng), `COSIGN-SCREENS.md` (màn hình + sample data), `docs/SCREENS.md` (màn → endpoint), `docs/BOARD.md` (phân việc).
+Tham chiếu: `docs/planning/IDEA-COSIGN.md` (ý tưởng), `docs/planning/COSIGN-SCREENS.md` (màn hình + sample data), `docs/SCREENS.md` (màn → endpoint), `docs/BOARD.md` (phân việc).
 
 ---
 

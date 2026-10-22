@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:grid;grid-template-columns:minmax(0,1.35fr) minmax(340px,1fr);gap:20px;align-items:start;width:100%">
+  <sc-if value="{{ missing }}" hint-placeholder-val="{{ false }}"><div style="padding:40px;color:var(--muted)">Select a request.</div></sc-if>
+  <sc-if value="{{ ok }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+    <div style="padding:20px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font:600 14px 'JetBrains Mono',monospace">{{ cr.id }}</span>
+        <span style="height:22px;padding:0 8px;border-radius:6px;background:{{ statusBg }};color:{{ statusFg }};font:600 11px/22px 'JetBrains Mono',monospace;text-transform:uppercase">{{ cr.status }}</span>
+        <sc-for list="{{ flagChips }}" as="f"><span style="height:22px;padding:0 8px;border-radius:6px;background:color-mix(in oklch, var(--refused) 14%, transparent);color:var(--refused);font:600 11px/22px 'JetBrains Mono',monospace">{{ f }}</span></sc-for>
+        <span style="flex:1"></span>
+        <span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">created {{ cr.createdAt }} · INC-2417</span>
+      </div>
+      <dc-import name="IdentityChip" person="{{ requester }}" size="lg" sub="handle" hint-size="280px,44px"></dc-import>
+      <div style="display:grid;grid-template-columns:120px minmax(0,1fr);row-gap:12px;column-gap:16px;font-size:13.5px;align-items:baseline">
+        <span style="color:var(--muted)">Capability</span><code style="font:500 13px 'JetBrains Mono',monospace;color:var(--agent);word-break:break-all">{{ cr.capability }}</code>
+        <span style="color:var(--muted)">Target</span><code style="font:500 13px 'JetBrains Mono',monospace">{{ targetHandle }}</code>
+        <sc-if value="{{ hasScope }}" hint-placeholder-val="{{ false }}">
+          <span style="color:var(--muted)">Scope</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span>{{ scopeCount }} records</span><sc-for list="{{ cr.scope }}" as="id"><span style="font:500 11.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:5px;background:var(--surface2);border:1px solid var(--border)">{{ id }}</span></sc-for></div>
+        </sc-if>
+        <sc-if value="{{ noScope }}" hint-placeholder-val="{{ false }}"><span style="color:var(--muted)">Scope</span><span style="color:var(--refused)">realm-wide · no record limit</span></sc-if>
+        <span style="color:var(--muted)">Duration</span><span>{{ durationText }}</span>
+      </div>
+      <sc-if value="{{ hasJust }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Agent justification</span>
+          <blockquote style="margin:0;padding:12px 16px;border-radius:8px;background:color-mix(in oklch, var(--agent) 8%, var(--surface2));font-size:14px;line-height:1.55;text-wrap:pretty">"{{ cr.justification }}"</blockquote>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ hasEvidence }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 20px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Evidence</span>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:12px;color:var(--muted)">payments-api error rate</span>
+            <svg viewBox="0 0 300 70" preserveAspectRatio="none" style="width:100%;height:70px;overflow:visible">
+              <polygon points="{{ chart.area }}" fill="color-mix(in oklch, var(--refused) 12%, transparent)"></polygon>
+              <polyline points="{{ chart.line }}" fill="none" stroke="var(--refused)" stroke-width="1.6" vector-effect="non-scaling-stroke"></polyline>
+              <sc-for list="{{ chart.markers }}" as="m"><line x1="{{ m.x }}" x2="{{ m.x }}" y1="0" y2="70" stroke="{{ m.color }}" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line></sc-for>
+            </svg>
+          </div>
+          <div style="font:400 11px/1.65 'JetBrains Mono',monospace;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;overflow:hidden">
+            <div>03:12:51 ERROR settlement rejected currency_mismatch mrc_8812</div>
+            <div>03:12:52 ERROR settlement rejected currency_mismatch mrc_8830</div>
+            <div>03:12:54 ERROR settlement rejected currency_mismatch mrc_8857</div>
+            <div>03:12:55 WARN retry_exhausted merchants=5</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showWhy }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 20px;border-radius:12px;border:1.5px solid var(--refused);background:color-mix(in oklch, var(--refused) 6%, var(--surface));display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:14px;font-weight:600;color:var(--refused)">Why flagged</span>
+        <span style="font-size:13.5px;line-height:1.55">Requested by agent immediately after processing log line containing PROMPT_INJECTION (0.97, French).</span>
+        <div style="font:400 12px/1.6 'JetBrains Mono',monospace;padding:10px 12px;border-radius:8px;background:color-mix(in oklch, var(--warn) 10%, var(--surface2));text-decoration:underline;text-decoration-color:var(--warn);text-decoration-thickness:2px;text-underline-offset:4px">{{ injectionLine }}</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showBlast }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 20px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:14px;font-weight:600">Blast radius preview</span>
+        <span style="font-size:13.5px">If approved, Atlas could:</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="padding:6px 10px;border-radius:8px;background:color-mix(in oklch, var(--refused) 10%, var(--surface2));font-size:13px">read all <b>48,201</b> customer records</span>
+          <span style="padding:6px 10px;border-radius:8px;background:color-mix(in oklch, var(--refused) 10%, var(--surface2));font-size:13px">grant roles</span>
+          <span style="padding:6px 10px;border-radius:8px;background:color-mix(in oklch, var(--refused) 10%, var(--surface2));font-size:13px">export data</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showDave }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 20px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:14px;font-weight:600">Dave Kim · recent activity</span>
+        <sc-for list="{{ daveActivity }}" as="a">
+          <div style="display:flex;gap:12px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted);width:64px">{{ a.ts }}</span><span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px">{{ a.action }} · {{ a.target }}</span><span style="font:600 11px 'JetBrains Mono',monospace;color:{{ a.c }}">{{ a.outcome }}</span></div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <div style="position:sticky;top:0;padding:22px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:center;gap:20px">
+      <dc-import name="QuorumSeal" required="{{ cr.required }}" approvals="{{ seal }}" size="{{ 150 }}" show-signed="{{ true }}" sig="{{ lastSig }}" hint-size="150px,150px"></dc-import>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <dc-import name="RiskChip" tier="{{ cr.tier }}" elevated="{{ elevated }}" hint-size="200px,22px"></dc-import>
+        <span style="font-size:14px;font-weight:600;color:{{ progressColor }}">{{ progressText }}</span>
+        <span style="font-size:12px;color:var(--muted)">Requester cannot approve</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Eligible approvers</span>
+      <sc-for list="{{ approvers }}" as="a" hint-placeholder-count="3">
+        <div style="display:flex;align-items:center;gap:10px;padding:7px 0">
+          <dc-import name="IdentityChip" person="{{ a.person }}" size="sm" sub="role" hint-size="160px,26px"></dc-import>
+          <span style="flex:1"></span>
+          <span style="font:600 11px 'JetBrains Mono',monospace;color:{{ a.c }}">{{ a.state }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;padding-top:14px;border-top:1px solid var(--border)">
+      <span style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Safety checks</span>
+      <sc-for list="{{ checks }}" as="c" hint-placeholder-count="4">
+        <div style="display:flex;gap:10px;font-size:13px;line-height:1.45">
+          <span style="width:18px;height:18px;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ c.bg }};color:{{ c.c }};font:700 11px 'JetBrains Mono',monospace">{{ c.mark }}</span>
+          <span>{{ c.text }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ canApprove }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:8px;padding-top:6px">
+        <sc-if value="{{ flaggedLayout }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ deny }}" style="height:42px;border-radius:9px;border:none;background:var(--refused);color:#fff;font:600 14px Inter,sans-serif;cursor:pointer">Deny</button>
+          <button onClick="{{ denyQ }}" style="height:40px;border-radius:9px;border:1px solid var(--refused);background:transparent;color:var(--refused);font:600 13px Inter,sans-serif;cursor:pointer">Deny &amp; quarantine agent context</button>
+          <button onClick="{{ approve }}" title="Requires 3 of 3" style="height:38px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font:600 13px Inter,sans-serif;cursor:pointer">Approve &amp; sign · requires 3 of 3</button>
+        </sc-if>
+        <sc-if value="{{ normalLayout }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px">
+            <button onClick="{{ approve }}" style="flex:1;height:44px;border-radius:9px;border:none;background:var(--accent);color:#0B0D12;font:600 14px Inter,sans-serif;cursor:pointer" style-hover="filter:brightness(1.08)">Approve &amp; sign</button>
+            <button onClick="{{ deny }}" style="height:44px;padding:0 18px;border-radius:9px;border:1px solid color-mix(in oklch, var(--refused) 50%, transparent);background:transparent;color:var(--refused);font:600 14px Inter,sans-serif;cursor:pointer">Deny</button>
+          </div>
+          <sc-if value="{{ hasShorter }}" hint-placeholder-val="{{ false }}">
+            <div style="position:relative">
+              <button onClick="{{ toggleShort }}" style="width:100%;height:36px;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--text);font:500 13px Inter,sans-serif;cursor:pointer">Approve with shorter duration ▾</button>
+              <sc-if value="{{ shortOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:0;right:0;top:40px;border-radius:9px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);overflow:hidden;z-index:5">
+                  <sc-for list="{{ shortOpts }}" as="o"><button onClick="{{ o.onClick }}" style="width:100%;height:36px;border:none;background:transparent;color:var(--text);font:500 13px Inter,sans-serif;cursor:pointer;text-align:left;padding:0 14px" style-hover="background:var(--surface2)">{{ o.label }}</button></sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{ hasNotice }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:12px 14px;border-radius:9px;background:var(--surface2);font-size:13px;color:var(--muted);line-height:1.5">{{ notice }}</div>
+    </sc-if>
+    <div style="font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:12px">Reducing authority is instant. Increasing authority requires quorum.</div>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:800},&quot;crId&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;CR-0192&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;security&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;viewer&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { shortOpen: false };
+  componentDidMount() {
+    const go = () => { this.unsub = window.CosignStore.subscribe(() => this.forceUpdate()); this.forceUpdate(); };
+    window.CosignStore ? go() : window.addEventListener('cosign:ready', go, { once: true });
+  }
+  componentWillUnmount() { this.unsub && this.unsub(); }
+  renderVals() {
+    const St = window.CosignStore;
+    if (!St) return { ok: false, missing: false };
+    const S = St.getState(), A = St.actions, sel = St.sel, D = St.data, P = D.PEOPLE;
+    const cr = S.requests[this.props.crId];
+    if (!cr) return { ok: false, missing: true };
+    const me = this.props.viewer || S.role;
+    const n = cr.approvals.length;
+    const seal = cr.approvals.map(a => ({ initials: P[a.who].initials, color: P[a.who].color }));
+    const sc = { pending: ['color-mix(in oklch, var(--pending) 15%, transparent)', 'var(--pending)'], approved: ['color-mix(in oklch, var(--ok) 15%, transparent)', 'var(--ok)'], denied: ['color-mix(in oklch, var(--refused) 15%, transparent)', 'var(--refused)'], draft: ['var(--surface2)', 'var(--muted)'], withdrawn: ['var(--surface2)', 'var(--muted)'] }[cr.status];
+    const approvers = cr.eligible.map(id => {
+      const ap = cr.approvals.find(a => a.who === id);
+      if (id === cr.requester) return { person: P[id], state: 'requester · not counted', c: 'var(--muted)' };
+      return { person: P[id], state: ap ? 'signed ' + ap.at : cr.status === 'pending' ? 'pending' : '—', c: ap ? 'var(--ok)' : 'var(--muted)' };
+    });
+    if (cr.requester === 'dave' && cr.eligible.includes('dave')) approvers.push({ person: { name: 'Second admin', role: 'Platform admin (not requester)', initials: '?', color: '#3A404D' }, state: 'pending', c: 'var(--muted)' });
+    const ck = (good, text) => ({ text, mark: good === true ? '✓' : good === false ? '✗' : 'i', c: good === true ? 'var(--ok)' : good === false ? 'var(--refused)' : 'var(--accent)', bg: `color-mix(in oklch, ${good === true ? 'var(--ok)' : good === false ? 'var(--refused)' : 'var(--accent)'} 15%, transparent)` });
+    const CHECKS = {
+      'CR-0192': [ck(true, 'Injection scan of agent context: clean'), ck(true, 'Scope limited to incident records'), ck(true, 'Duration ≤ policy max (30 min)'), ck(null, 'Requester is agent → human quorum required')],
+      'CR-0193': [ck(false, 'Injection scan of agent context: PROMPT_INJECTION 0.97 (fr)'), ck(false, 'Scope: realm-wide, unrelated to incident'), ck(false, 'Agents can never hold roles.grant'), ck(null, 'Escalated +1 tier → T3 · 3 of 3')],
+      'CR-0194': [ck(false, 'Self-grant: requester is also the target'), ck(false, 'Requester not on the INC-2417 rota'), ck(false, 'Unusual: self-grant at 03:20'), ck(null, 'Requester cannot approve own request')],
+      'CR-0195': [ck(false, 'realm-admin is never grantable to agents'), ck(false, 'Admin-initiated change on an agent identity'), ck(null, 'Your approval is not counted on your own request')],
+    };
+    const can = sel.canApprove(cr.id, me);
+    const flagged = cr.flags.includes('injection') && this.props.security;
+    let notice = '';
+    if (me === cr.requester) notice = 'Requester cannot approve own request.';
+    else if (P[me].agent) notice = 'Agents can never approve requests.';
+    else if (me === 'priya') notice = 'Compliance can read but not approve.';
+    else if (cr.approvals.some(a => a.who === me)) notice = `You signed at ${cr.approvals.find(a => a.who === me).at}. ` + (cr.status === 'approved' ? 'Quorum reached.' : `Waiting for ${cr.required - n} more approver${cr.required - n > 1 ? 's' : ''}.`);
+    else if (cr.status !== 'pending') notice = `This request is ${cr.status}.`;
+    const ch = sel.chart(300, 70);
+    const daveActivity = S.audit.filter(a => a.actor === 'dave').slice(-5).reverse().map(a => ({ ...a, c: a.outcome === 'allowed' ? 'var(--ok)' : 'var(--refused)' }));
+    if (!daveActivity.length) daveActivity.push({ ts: '03:19:40', action: 'session.login', target: 'admin console', outcome: 'allowed', c: 'var(--ok)' });
+    else daveActivity.push({ ts: '03:19:40', action: 'session.login', target: 'admin console', outcome: 'allowed', c: 'var(--ok)' });
+    return {
+      ok: true, missing: false, cr, requester: sel.person(cr.requester), targetHandle: sel.person(cr.target).handle,
+      statusBg: sc[0], statusFg: sc[1],
+      flagChips: cr.flags.includes('injection') ? ['FLAGGED · injection'] : cr.flags.includes('self-grant') ? ['FLAGGED · self-grant'] : [],
+      hasScope: !!(cr.scope && cr.scope.length), scopeCount: cr.scope ? cr.scope.length : 0, noScope: !(cr.scope && cr.scope.length),
+      durationText: cr.duration ? cr.duration + ' minutes' : 'permanent',
+      hasJust: !!cr.justification, hasEvidence: cr.id === 'CR-0192', chart: ch,
+      showWhy: !!this.props.security && cr.flags.includes('injection'), injectionLine: D.INJECTION_LINE,
+      showBlast: !!this.props.security && cr.id === 'CR-0193',
+      showDave: !!this.props.security && cr.requester === 'dave', daveActivity,
+      seal, lastSig: n ? cr.approvals[n - 1].sig : '', elevated: cr.elevated || '',
+      progressText: cr.status === 'approved' ? `Quorum reached · ${n} of ${cr.required}` : cr.status === 'pending' ? (n ? `${n} of ${cr.required} · waiting for ${cr.required - n} more approver${cr.required - n > 1 ? 's' : ''}` : `0 of ${cr.required} approvals`) : cr.status,
+      progressColor: cr.status === 'approved' ? 'var(--ok)' : cr.status === 'denied' ? 'var(--refused)' : 'var(--text)',
+      approvers, checks: CHECKS[cr.id] || [],
+      canApprove: can, flaggedLayout: flagged, normalLayout: !flagged,
+      approve: () => A.openSign(cr.id), deny: () => A.deny(cr.id), denyQ: () => A.deny(cr.id, true),
+      hasShorter: cr.id === 'CR-0192', shortOpen: this.state.shortOpen, toggleShort: () => this.setState(s => ({ shortOpen: !s.shortOpen })),
+      shortOpts: [5, 10].map(m => ({ label: `Approve for ${m} minutes`, onClick: () => { this.setState({ shortOpen: false }); A.openSign(cr.id); } })),
+      hasNotice: !can && !!notice, notice,
+    };
+  }
+}
+</script>
+</body>
+</html>

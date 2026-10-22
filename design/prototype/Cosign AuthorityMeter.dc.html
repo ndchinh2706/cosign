@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:10px;width:100%">
+  <span style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">{{ title }}</span>
+  <div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <sc-for list="{{ items }}" as="r" hint-placeholder-count="6">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:{{ r.bg }};transition:background 500ms">
+        <span style="width:22px;height:22px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ r.iconBg }};color:{{ r.color }}">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ r.icon }}"></path></svg>
+        </span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <code style="font:500 12px 'JetBrains Mono',monospace;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.cap }}</code>
+          <sc-if value="{{ r.hasSub }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;color:var(--muted)">{{ r.sub }}</span></sc-if>
+        </div>
+        <sc-if value="{{ r.isPending }}" hint-placeholder-val="{{ false }}"><dc-import name="QuorumSeal" required="{{ 2 }}" approvals="{{ r.seal }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import></sc-if>
+        <sc-if value="{{ r.isGranted }}" hint-placeholder-val="{{ false }}">
+          <span style="height:22px;padding:0 8px;border-radius:11px;background:{{ r.pillBg }};color:{{ r.pillFg }};font:600 11px/22px 'JetBrains Mono',monospace;white-space:nowrap">⏱ {{ r.note }}</span>
+        </sc-if>
+        <sc-if value="{{ r.showLabel }}" hint-placeholder-val="{{ true }}"><span style="font:600 10.5px 'JetBrains Mono',monospace;color:{{ r.color }};text-transform:uppercase;letter-spacing:0.04em">{{ r.label }}</span></sc-if>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:320},&quot;rows&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{cap,state,note,seal}[]&quot;},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Current authority&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const I = { ok: 'M3 8.5l3 3 7-7', locked: 'M4.5 7.5h7v6h-7zM6 7.5V5.5a2 2 0 0 1 4 0v2', pending: 'M8 3v5l3 2M8 14.5a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13z', granted: 'M8 4.5V8l2.5 1.5M8 14a6 6 0 1 1 0-12 6 6 0 0 1 0 12z' };
+    const C = { ok: 'var(--ok)', locked: 'var(--muted)', pending: 'var(--pending)', granted: 'var(--agent)' };
+    const L = { ok: 'allowed', locked: 'locked', pending: 'pending', granted: '' };
+    const items = (this.props.rows || []).map(r => {
+      const parts = (r.note || '').split(':').map(Number);
+      const secs = parts.length === 2 ? parts[0] * 60 + parts[1] : 999;
+      const amber = secs < 300;
+      return {
+        cap: r.cap, color: C[r.state], icon: I[r.state], label: L[r.state], showLabel: r.state !== 'granted',
+        iconBg: `color-mix(in oklch, ${C[r.state]} 14%, transparent)`,
+        bg: r.state === 'granted' ? 'color-mix(in oklch, var(--agent) 8%, var(--surface))' : r.state === 'pending' ? 'color-mix(in oklch, var(--pending) 6%, var(--surface))' : 'var(--surface)',
+        hasSub: r.state === 'pending' || (r.state === 'locked' && !!r.note) || r.state === 'granted',
+        sub: r.state === 'granted' ? 'Access expires in ' + r.note : r.note,
+        isPending: r.state === 'pending', isGranted: r.state === 'granted', note: r.note, seal: r.seal || [],
+        pillBg: amber ? 'color-mix(in oklch, var(--pending) 18%, transparent)' : 'color-mix(in oklch, var(--agent) 18%, transparent)', pillFg: amber ? 'var(--pending)' : 'var(--agent)',
+      };
+    });
+    return { items, title: this.props.title || 'Current authority' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:absolute;inset:0;overflow:auto;background:var(--bg)">
+<sc-if value="{{ isGov }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="L1 Governance" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:22px;max-width:1700px">
+    <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Governance</span>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+        <div style="padding:16px 18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:12.5px;color:var(--muted)">{{ s.label }}</span>
+          <span style="font:600 28px 'JetBrains Mono',monospace;letter-spacing:-0.02em;color:{{ s.c }}">{{ s.value }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start">
+      <div style="border-radius:14px;border:1px solid var(--border);background:var(--surface);overflow:hidden">
+        <div style="padding:16px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600">Change request queue</div>
+        <div style="display:grid;grid-template-columns:86px 120px minmax(0,1fr) 150px 82px 50px 84px;font-size:12px;color:var(--muted);padding:9px 18px;border-bottom:1px solid var(--border);gap:10px"><span>ID</span><span>Requester</span><span>Change</span><span>Risk</span><span>Quorum</span><span>Age</span><span>Status</span></div>
+        <sc-if value="{{ noQueue }}" hint-placeholder-val="{{ false }}"><div style="padding:24px 18px;color:var(--muted);font-size:13px">Queue is empty.</div></sc-if>
+        <sc-for list="{{ queue }}" as="q" hint-placeholder-count="3">
+          <button onClick="{{ q.onClick }}" style="width:100%;display:grid;grid-template-columns:86px 120px minmax(0,1fr) 150px 82px 50px 84px;gap:10px;align-items:center;padding:12px 18px;border:none;border-bottom:1px solid var(--border);background:{{ q.bg }};color:var(--text);text-align:left;cursor:pointer;font-family:inherit" style-hover="filter:brightness(1.1)">
+            <span style="font:600 12.5px 'JetBrains Mono',monospace">{{ q.id }}</span>
+            <dc-import name="IdentityChip" person="{{ q.requester }}" size="xs" hint-size="110px,20px"></dc-import>
+            <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.change }}</span><sc-if value="{{ q.hasFlag }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;color:var(--refused)">{{ q.flag }}</span></sc-if></div>
+            <dc-import name="RiskChip" tier="{{ q.tier }}" elevated="{{ q.elevated }}" hide-reason="{{ true }}" hint-size="100px,22px"></dc-import>
+            <div style="display:flex;align-items:center;gap:6px"><dc-import name="QuorumSeal" required="{{ q.required }}" approvals="{{ q.seal }}" size="{{ 26 }}" hint-size="26px,26px"></dc-import><span style="font:500 12px 'JetBrains Mono',monospace">{{ q.n }}</span></div>
+            <span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">{{ q.age }}</span>
+            <span style="font:600 11px 'JetBrains Mono',monospace;color:{{ q.sc }};text-transform:uppercase">{{ q.status }}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="border-radius:14px;border:1px solid var(--border);background:var(--surface);overflow:hidden">
+        <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:600">Authority map</span><span style="font-size:11.5px;color:var(--muted)">sensitive capabilities</span></div>
+        <div style="display:grid;grid-template-columns:130px repeat(5,minmax(0,1fr));font-size:11px">
+          <span style="padding:10px 14px;border-bottom:1px solid var(--border)"></span>
+          <sc-for list="{{ mapCols }}" as="c"><span style="padding:10px 6px;border-bottom:1px solid var(--border);font:500 10.5px/1.3 'JetBrains Mono',monospace;color:var(--muted);text-align:center">{{ c }}</span></sc-for>
+          <sc-for list="{{ mapRows }}" as="r" hint-placeholder-count="5">
+            <div style="padding:10px 14px;border-bottom:1px solid var(--border)"><dc-import name="IdentityChip" person="{{ r.person }}" size="xs" hint-size="100px,20px"></dc-import></div>
+            <sc-for list="{{ r.cells }}" as="c">
+              <div style="padding:8px 6px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center">
+                <span title="{{ c.title }}" style="min-width:30px;height:24px;padding:0 6px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:{{ c.bg }};color:{{ c.c }};font:600 11px 'JetBrains Mono',monospace;transition:all 400ms">{{ c.mark }}</span>
+              </div>
+            </sc-for>
+          </sc-for>
+        </div>
+        <div style="padding:10px 14px;display:flex;gap:14px;font-size:11.5px;color:var(--muted)"><span>✓ allowed</span><span>🔒 locked</span><span>⏳ pending</span><span>⏱ granted</span></div>
+      </div>
+    </div>
+    <div style="font-size:12.5px;color:var(--muted)">Reducing authority is instant. Increasing authority requires quorum.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isApprovals }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="L2 Change request review" style="padding:24px 28px 100px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Approvals</span><span style="color:var(--muted);font-size:13px">Security view · includes flagged requests</span></div>
+    <sc-if value="{{ noReqs }}" hint-placeholder-val="{{ false }}"><div style="padding:40px;border-radius:12px;border:1px dashed var(--border);color:var(--muted);text-align:center">No change requests.</div></sc-if>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <sc-for list="{{ reqTabs }}" as="r">
+        <button onClick="{{ r.onClick }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;border:1px solid {{ r.bd }};background:{{ r.bg }};color:var(--text);font:600 12.5px 'JetBrains Mono',monospace;cursor:pointer">
+          <span style="width:7px;height:7px;border-radius:50%;background:{{ r.dot }}"></span>{{ r.id }}<span style="font:500 12px Inter,sans-serif;color:var(--muted)">{{ r.short }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}"><dc-import name="Cosign RequestReview" cr-id="{{ selId }}" security="{{ true }}" hint-size="100%,700px"></dc-import></sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isPolicies }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="L3 Quorum policies" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:20px;max-width:1300px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Quorum policies</span><span style="font:500 12px 'JetBrains Mono',monospace;color:var(--ok);padding:3px 8px;border-radius:6px;background:color-mix(in oklch, var(--ok) 12%, transparent)">v7 · signed</span><span style="flex:1"></span>
+      <button onClick="{{ toggleEdit }}" style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">{{ editLabel }}</button></div>
+    <sc-if value="{{ editing }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:14px 16px;border-radius:10px;border:1px solid color-mix(in oklch, var(--pending) 50%, transparent);background:color-mix(in oklch, var(--pending) 10%, transparent);font-size:13.5px;display:flex;gap:10px;align-items:center">
+        <dc-import name="RiskChip" tier="{{ 3 }}" hint-size="90px,22px"></dc-import><span>Policy changes are themselves T3 — requires 3 of 3 signatures. Draft v8 will be submitted as a change request.</span>
+      </div>
+    </sc-if>
+    <div style="border-radius:12px;border:1px solid var(--border);background:var(--surface);overflow:hidden">
+      <div style="display:grid;grid-template-columns:120px minmax(0,1.6fr) 140px 120px minmax(0,1fr);gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted)"><span>Tier</span><span>Example actions</span><span>Approvers required</span><span>Max duration</span><span>Eligible approvers</span></div>
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:120px minmax(0,1.6fr) 140px 120px minmax(0,1fr);gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:13.5px;align-items:center;background:{{ t.bg }}">
+          <dc-import name="RiskChip" tier="{{ t.tier }}" label="{{ t.label }}" hint-size="80px,22px"></dc-import><span>{{ t.ex }}</span><span style="font-family:'JetBrains Mono',monospace">{{ t.req }}</span><span style="font-family:'JetBrains Mono',monospace">{{ t.max }}</span><span style="color:var(--muted)">{{ t.who }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px">
+      <div style="padding:18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:14px;font-weight:600">Escalation rules</span>
+        <sc-for list="{{ rules }}" as="r"><div style="display:flex;gap:10px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid var(--border)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="{{ r.c }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="{{ r.icon }}"></path></svg><span>{{ r.text }}</span></div></sc-for>
+      </div>
+      <div style="padding:18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:14px;font-weight:600">Version history</span>
+        <sc-for list="{{ versions }}" as="v">
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+            <span style="font:600 13px 'JetBrains Mono',monospace;width:28px">{{ v.v }}</span>
+            <span style="flex:1;font-size:13px">{{ v.by }}</span>
+            <code style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted)">{{ v.sig }}</code>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="font-size:12.5px;color:var(--muted)">Reducing authority is instant. Increasing authority requires quorum.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAgents }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="L4 Agent registry" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:20px;max-width:1500px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Agents</span><span style="flex:1"></span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <button onClick="{{ kill }}" style="height:38px;padding:0 16px;border-radius:9px;border:none;background:var(--refused);color:#fff;font:600 13.5px Inter,sans-serif;cursor:pointer">Revoke all elevated access</button>
+        <span style="font-size:11.5px;color:var(--muted)">Reducing authority is instant.</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+      <sc-for list="{{ agents }}" as="a" hint-placeholder-count="3">
+        <div style="padding:18px;border-radius:14px;border:1px solid {{ a.bd }};background:var(--surface);display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between"><dc-import name="IdentityChip" person="{{ a.person }}" size="md" sub="role" hint-size="180px,32px"></dc-import><span style="font:600 11px 'JetBrains Mono',monospace;color:{{ a.sc }};text-transform:uppercase">{{ a.status }}</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px">
+            <span style="color:var(--muted)">Model</span><code style="font:400 12px 'JetBrains Mono',monospace">{{ a.model }}</code>
+            <span style="color:var(--muted)">Runs today</span><span style="font-family:'JetBrains Mono',monospace">{{ a.runs }}</span>
+            <span style="color:var(--muted)">Last action</span><code style="font:400 12px 'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.last }}</code>
+          </div>
+          <sc-if value="{{ a.hasFlags }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--refused);padding:8px 10px;border-radius:8px;background:color-mix(in oklch, var(--refused) 10%, transparent)">{{ a.flags }}</div></sc-if>
+          <dc-import name="Cosign AuthorityMeter" rows="{{ a.authority }}" title="Authority" hint-size="100%,200px"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { editing: false };
+  componentDidMount() {
+    const go = () => { this.unsub = window.CosignStore.subscribe(() => this.forceUpdate()); this.forceUpdate(); };
+    window.CosignStore ? go() : window.addEventListener('cosign:ready', go, { once: true });
+  }
+  componentWillUnmount() { this.unsub && this.unsub(); }
+  renderVals() {
+    const St = window.CosignStore;
+    if (!St) return { isGov: false };
+    const S = St.getState(), A = St.actions, sel = St.sel, D = St.data, P = D.PEOPLE;
+    const scr = S.screens.marcus;
+    const sealOf = cr => cr.approvals.map(a => ({ initials: P[a.who].initials, color: P[a.who].color }));
+    const statusColor = s => ({ pending: 'var(--pending)', approved: 'var(--ok)', denied: 'var(--refused)', draft: 'var(--muted)', withdrawn: 'var(--muted)' }[s]);
+    const all = S.order.map(id => S.requests[id]).filter(c => c.status !== 'draft');
+    const pendingN = all.filter(c => c.status === 'pending').length;
+    const queue = all.map(c => {
+      const flagged = c.flags.includes('injection') || c.flags.includes('self-grant');
+      return { id: c.id, requester: sel.person(c.requester), change: c.change, tier: c.tier, elevated: c.elevated || '', required: c.required, seal: sealOf(c), n: `${c.approvals.length}/${c.required}`, age: c.age, status: c.status, sc: statusColor(c.status),
+        hasFlag: flagged, flag: c.flags.includes('injection') ? 'flagged: injection in agent context' : 'flagged: unusual self-grant at 03:20',
+        bg: flagged && c.status === 'pending' ? 'color-mix(in oklch, var(--refused) 6%, var(--surface))' : 'var(--surface)',
+        onClick: () => { A.selectCR(c.id); A.go('approvals'); } };
+    });
+    const pii = sel.piiState();
+    const cell = (st, title) => ({ ok: { mark: '✓', c: 'var(--ok)', bg: 'color-mix(in oklch, var(--ok) 12%, transparent)' }, locked: { mark: '🔒', c: 'var(--muted)', bg: 'var(--surface2)' }, pending: { mark: '⏳', c: 'var(--pending)', bg: 'color-mix(in oklch, var(--pending) 14%, transparent)' }, granted: { mark: '⏱ ' + sel.countdown(), c: 'var(--agent)', bg: 'color-mix(in oklch, var(--agent) 16%, transparent)' } }[st] && { ...{ ok: { mark: '✓', c: 'var(--ok)', bg: 'color-mix(in oklch, var(--ok) 12%, transparent)' }, locked: { mark: '🔒', c: 'var(--muted)', bg: 'var(--surface2)' }, pending: { mark: '⏳', c: 'var(--pending)', bg: 'color-mix(in oklch, var(--pending) 14%, transparent)' }, granted: { mark: '⏱ ' + sel.countdown(), c: 'var(--agent)', bg: 'color-mix(in oklch, var(--agent) 16%, transparent)' } }[st], title: title || st });
+    const pend = id => S.requests[id] && S.requests[id].status === 'pending';
+    const mapRows = [
+      { person: P.atlas, cells: [cell(pii), cell(pend('CR-0193') || pend('CR-0195') ? 'pending' : 'locked', 'never grantable to agents'), cell('locked'), cell('locked'), cell('locked')] },
+      { person: P.linh, cells: [cell('locked'), cell('locked'), cell('locked'), cell('locked'), cell('locked')] },
+      { person: P.marcus, cells: [cell('locked'), cell('locked'), cell('locked'), cell('locked', 'policy edits are T3'), cell('locked')] },
+      { person: P.dave, cells: [cell(pend('CR-0194') ? 'pending' : 'locked', 'CR-0194 self-grant'), cell('locked'), cell('locked'), cell('locked'), cell('locked')] },
+      { person: P.priya, cells: [cell('locked'), cell('locked'), cell('locked'), cell('locked'), cell('locked', 'read-only')] },
+    ];
+    const visible = all;
+    const selId = visible.find(c => c.id === S.selCR) ? S.selCR : visible[0] && visible[0].id;
+    const atlasAuth = sel.atlasAuthority().map(r => ({ ...r, seal: r.state === 'pending' && S.requests['CR-0192'] ? sealOf(S.requests['CR-0192']) : [] }));
+    const agents = D.AGENTS.map(a => {
+      const isAtlas = a.id === 'atlas';
+      const person = isAtlas ? P.atlas : { name: a.name, role: a.purpose, initials: a.name.slice(0, 2).toUpperCase(), agent: true, color: '#B48CFF' };
+      const status = isAtlas ? (S.agent.killed ? 'revoked' : S.grant.active ? 'elevated' : a.status) : a.status;
+      return { person, model: a.model, runs: a.runs, last: isAtlas ? (D.AGENT_EVENTS.slice(0, S.agent.cursor).filter(e => e.tool).slice(-1)[0] || {}).tool || '—' : a.last, status,
+        sc: status === 'elevated' ? 'var(--agent)' : status === 'revoked' ? 'var(--refused)' : status === 'active' ? 'var(--ok)' : 'var(--muted)',
+        bd: isAtlas && S.grant.active ? 'color-mix(in oklch, var(--agent) 45%, var(--border))' : 'var(--border)',
+        hasFlags: isAtlas && S.flags.injection, flags: S.flags.quarantined ? '1 injection event · context quarantined' : '1 injection event · CR-0193 escalated to T3',
+        authority: isAtlas ? atlasAuth : a.id === 'ledger' ? [{ cap: 'ledger.read', state: 'ok' }, { cap: 'ledger.reconcile', state: 'ok' }, { cap: 'customer_pii.selfdecrypt', state: 'locked' }] : [{ cap: 'docs.read', state: 'ok' }, { cap: 'docs.write', state: 'locked' }] };
+    });
+    return {
+      isGov: scr === 'governance', isApprovals: scr === 'approvals', isPolicies: scr === 'policies', isAgents: scr === 'agents',
+      stats: [
+        { label: 'Pending change requests', value: String(pendingN), c: pendingN ? 'var(--pending)' : 'var(--text)' },
+        { label: 'Agents with elevated access now', value: S.grant.active ? '1' : '0', c: S.grant.active ? 'var(--agent)' : 'var(--text)' },
+        { label: 'Injection detections · 24h', value: S.flags.injection ? '3' : '2', c: 'var(--refused)' },
+        { label: 'Policy version', value: 'v7 · signed', c: 'var(--text)' },
+      ],
+      queue, noQueue: !queue.length,
+      mapCols: ['customer_pii decrypt', 'roles.grant', 'secrets.rotate', 'policy.edit', 'audit.write'], mapRows,
+      noReqs: !visible.length, hasSel: !!selId, selId,
+      reqTabs: visible.map(c => { const on = c.id === selId; return { id: c.id, short: c.change.slice(0, 30), onClick: () => A.selectCR(c.id), bd: on ? 'var(--accent)' : 'var(--border)', bg: on ? 'color-mix(in oklch, var(--accent) 10%, var(--surface))' : 'var(--surface)', dot: statusColor(c.status) }; }),
+      editing: this.state.editing, editLabel: this.state.editing ? 'Discard draft' : 'Edit policy', toggleEdit: () => this.setState(s => ({ editing: !s.editing })),
+      tiers: D.POLICY_TIERS.map(t => ({ ...t, bg: this.state.editing ? 'color-mix(in oklch, var(--pending) 4%, var(--surface))' : 'var(--surface)' })),
+      rules: [
+        { text: '+1 tier if prompt injection detected in agent context', icon: 'M8 13V3M4 7l4-4 4 4', c: 'var(--refused)' },
+        { text: '+1 tier outside incident window', icon: 'M8 13V3M4 7l4-4 4 4', c: 'var(--refused)' },
+        { text: 'Agents can never hold roles.grant', icon: 'M4.5 7.5h7v6h-7zM6 7.5V5.5a2 2 0 0 1 4 0v2', c: 'var(--muted)' },
+      ],
+      versions: [{ v: 'v7', by: 'Marcus Lee, Linh Tran, Dave Kim · 3 of 3', sig: 'sig:7f3a…c91e (14/20 ORK)' }, { v: 'v6', by: 'Marcus Lee, Linh Tran, Dave Kim · 3 of 3', sig: 'sig:4be0…12d7 (14/20 ORK)' }, { v: 'v5', by: 'Marcus Lee, Ana Ruiz, Dave Kim · 3 of 3', sig: 'sig:a91c…7f02 (14/20 ORK)' }],
+      agents, kill: A.killSwitch,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;align-items:center;gap:10px;flex:none;padding:{{ pad }}">
+  <div style="position:relative;width:{{ px }};height:{{ px }};flex:none">
+    <div style="position:absolute;inset:-14%;border-radius:50%;background:radial-gradient(circle, color-mix(in oklch, var(--ok) 30%, transparent) 0%, transparent 65%);opacity:{{ haloOp }};transform:scale({{ haloScale }});transition:opacity 700ms ease, transform 900ms cubic-bezier(.2,1.4,.4,1);pointer-events:none"></div>
+    <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+      <sc-for list="{{ segs }}" as="s" hint-placeholder-count="2">
+        <path d="{{ s.d }}" fill="none" stroke="var(--border)" stroke-width="{{ sw }}" stroke-linecap="round"></path>
+        <path d="{{ s.d }}" fill="none" stroke="{{ s.color }}" stroke-width="{{ sw }}" stroke-linecap="round" style="stroke-dasharray:{{ s.len }};stroke-dashoffset:{{ s.off }};transition:stroke-dashoffset 1000ms cubic-bezier(.65,0,.25,1), stroke 600ms ease"></path>
+      </sc-for>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+      <div style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:{{ fs }};color:{{ centerColor }};letter-spacing:-0.02em;transition:color 600ms">{{ text }}</div>
+      <sc-if value="{{ showCaption }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:{{ fs2 }};color:var(--muted);letter-spacing:0.06em;text-transform:uppercase">{{ caption }}</div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ showAvatars }}" hint-placeholder-val="{{ false }}">
+      <sc-for list="{{ segs }}" as="s">
+        <div style="position:absolute;left:{{ s.ax }};top:{{ s.ay }};width:{{ av }};height:{{ av }};margin-left:{{ avm }};margin-top:{{ avm }};border-radius:50%;background:{{ s.avColor }};color:#0B0D12;display:flex;align-items:center;justify-content:center;font-size:{{ avfs }};font-weight:700;box-shadow:0 0 0 3px var(--surface);transform:scale({{ s.avScale }});transition:transform 600ms cubic-bezier(.2,1.6,.4,1) 650ms">{{ s.initials }}</div>
+      </sc-for>
+    </sc-if>
+  </div>
+  <sc-if value="{{ showSigned }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+      <div style="display:flex;align-items:center;gap:6px;color:var(--ok);font-size:12px;font-weight:600">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2.5 6.2l2.3 2.3 4.7-5"></path></svg>
+        <span>Threshold-signed</span>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">{{ sig }}</div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:200,&quot;height&quot;:200},&quot;required&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:2,&quot;tsType&quot;:&quot;number&quot;},&quot;approvals&quot;:{&quot;editor&quot;:null,&quot;default&quot;:[],&quot;tsType&quot;:&quot;{initials:string,color:string}[]&quot;},&quot;size&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:96,&quot;tsType&quot;:&quot;number&quot;},&quot;showSigned&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;sig&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;tone&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;accent&quot;,&quot;agent&quot;],&quot;default&quot;:&quot;accent&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const k = Math.max(1, p.required ?? 2);
+    const approvals = p.approvals || [];
+    const size = p.size ?? 96;
+    const n = Math.min(approvals.length, k);
+    const complete = n >= k;
+    const r = 40, gap = k === 1 ? 0.0001 : 14;
+    const segs = [];
+    for (let i = 0; i < k; i++) {
+      const span = 360 / k;
+      const a0 = -90 + i * span + gap / 2, a1 = a0 + span - gap;
+      const rad = d => d * Math.PI / 180;
+      const x0 = 50 + r * Math.cos(rad(a0)), y0 = 50 + r * Math.sin(rad(a0));
+      const x1 = 50 + r * Math.cos(rad(a1)), y1 = 50 + r * Math.sin(rad(a1));
+      const large = (a1 - a0) > 180 ? 1 : 0;
+      const d = k === 1 ? `M50 10 A40 40 0 1 1 49.99 10` : `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+      const len = (r * rad(k === 1 ? 360 : a1 - a0)).toFixed(2);
+      const filled = i < n;
+      const mid = rad((a0 + a1) / 2);
+      const ap = approvals[i];
+      segs.push({
+        d, len, off: filled ? 0 : len,
+        color: complete ? 'var(--ok)' : (p.tone === 'agent' ? 'var(--agent)' : 'var(--accent)'),
+        ax: (50 + 50 * Math.cos(mid)) + '%', ay: (50 + 50 * Math.sin(mid)) + '%',
+        avScale: filled && ap ? 1 : 0, avColor: ap ? ap.color : 'transparent', initials: ap ? ap.initials : '',
+      });
+    }
+    const av = Math.round(size * 0.24);
+    return {
+      segs, px: size + 'px', sw: size < 40 ? 11 : size < 80 ? 8 : 6,
+      text: `${n} / ${k}`, fs: Math.round(size * (size < 40 ? 0.26 : 0.2)) + 'px', fs2: Math.max(9, Math.round(size * 0.075)) + 'px',
+      centerColor: complete ? 'var(--ok)' : 'var(--text)',
+      showCaption: size >= 90, caption: complete ? 'signed' : 'approvals',
+      showAvatars: size >= 64, pad: size >= 64 ? (Math.ceil(av / 2) + 4) + 'px' : '0px', av: av + 'px', avm: (-av / 2) + 'px', avfs: Math.round(av * 0.38) + 'px',
+      haloOp: complete ? 1 : 0, haloScale: complete ? 1 : 0.7,
+      showSigned: !!p.showSigned && complete, sig: p.sig || 'sig:7f3a…c91e (14/20 ORK)',
+    };
+  }
+}
+</script>
+</body>
+</html>

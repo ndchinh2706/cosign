@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg)">
+<sc-if value="{{ isConsole }}" hint-placeholder-val="{{ true }}">
+  <div data-screen-label="A1 Agent Console" style="flex:1;min-height:0;display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr) minmax(250px,340px)">
+    <section style="border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0;background:var(--surface)">
+      <div style="padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
+        <span style="font-size:13px;font-weight:600">Run timeline</span>
+        <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">run_0x4f2a</span>
+      </div>
+      <div style="flex:1;overflow:auto;padding:14px 14px 80px;display:flex;flex-direction:column">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+          <div style="display:flex;gap:10px;position:relative;padding-bottom:14px;animation:cs-in 260ms ease">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:none">
+              <div style="width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:{{ s.iconBg }};color:{{ s.color }};border:1px solid {{ s.iconBd }}">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.icon }}"></path></svg>
+              </div>
+              <div style="flex:1;width:1px;background:var(--border);margin-top:4px"></div>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;padding-top:2px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">{{ s.t }}</span>
+                <span style="flex:1"></span>
+                <span style="font:600 10.5px 'JetBrains Mono',monospace;color:{{ s.color }};text-transform:uppercase;letter-spacing:0.04em">{{ s.status }}</span>
+              </div>
+              <div style="font:{{ s.font }};color:var(--text);line-height:1.45;word-break:break-word">{{ s.label }}</div>
+              <sc-if value="{{ s.hasTier }}" hint-placeholder-val="{{ false }}"><dc-import name="RiskChip" tier="{{ s.tier }}" elevated="{{ s.elevated }}" hide-reason="{{ true }}" hint-size="80px,22px"></dc-import></sc-if>
+            </div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ working }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;padding:4px 0 0 4px;color:var(--agent);font-size:12.5px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--agent);animation:cs-pulse 1.2s ease-in-out infinite"></span>Atlas is working…
+          </div>
+        </sc-if>
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font:600 13px 'JetBrains Mono',monospace">INC-2417</span>
+          <span style="font-size:14px;font-weight:600">payments-api returning 502s</span>
+          <span style="height:20px;padding:0 7px;border-radius:5px;background:color-mix(in oklch, var(--refused) 16%, transparent);color:var(--refused);font:700 10.5px/20px 'JetBrains Mono',monospace">SEV-1</span>
+          <span style="flex:1"></span>
+          <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 11px;border-radius:14px;background:{{ statusBg }};color:{{ statusFg }};font-size:12.5px;font-weight:600">
+            <span style="width:7px;height:7px;border-radius:50%;background:currentColor;animation:{{ statusAnim }}"></span>{{ statusText }}
+          </div>
+          <div style="display:flex;gap:4px" data-noprint="1">
+            <button onClick="{{ playToggle }}" style="height:28px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 12px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px">{{ playLabel }}</button>
+            <button onClick="{{ step }}" title="Next step" style="height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 12px Inter,sans-serif;cursor:pointer">Step ›</button>
+            <button onClick="{{ restart }}" title="Restart run" style="height:28px;width:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font:600 13px Inter,sans-serif;cursor:pointer">↺</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;align-items:stretch">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:110px">
+            <span style="font-size:11.5px;color:var(--muted)">Error rate</span>
+            <span style="font:600 24px 'JetBrains Mono',monospace;color:{{ erColor }};letter-spacing:-0.02em;transition:color 400ms">{{ errorRate }}</span>
+            <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">since 03:00</span>
+          </div>
+          <div style="flex:1;position:relative;height:72px">
+            <svg viewBox="0 0 600 72" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+              <polygon points="{{ chart.area }}" fill="color-mix(in oklch, var(--refused) 12%, transparent)"></polygon>
+              <polyline points="{{ chart.line }}" fill="none" stroke="var(--refused)" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"></polyline>
+              <sc-for list="{{ chart.markers }}" as="m"><line x1="{{ m.x }}" x2="{{ m.x }}" y1="0" y2="72" stroke="{{ m.color }}" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line></sc-for>
+            </svg>
+            <sc-for list="{{ chart.markers }}" as="m"><span style="position:absolute;top:-2px;left:{{ m.pct }};margin-left:4px;font:500 10.5px 'JetBrains Mono',monospace;color:{{ m.color }};white-space:nowrap">{{ m.label }}</span></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div ref="{{ streamRef }}" style="flex:1;overflow:auto;padding:20px 24px 170px;display:flex;flex-direction:column;gap:14px">
+        <sc-for list="{{ items }}" as="e" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:10px;animation:cs-in 300ms ease">
+            <sc-if value="{{ e.isThink }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;color:var(--agent);font-size:13px;font-style:italic">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="7" r="4.5"></circle><path d="M6 13.5h4"></path></svg>
+                <span>{{ e.text }}</span><span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted);font-style:normal">{{ e.t }}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ e.isSay }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;gap:12px;max-width:760px">
+                <dc-import name="IdentityChip" person="{{ atlas }}" size="sm" avatar-only="{{ true }}" hint-size="26px,26px"></dc-import>
+                <div style="flex:1;padding:12px 15px;border-radius:4px 12px 12px 12px;background:color-mix(in oklch, var(--agent) 10%, var(--surface));border:1px solid color-mix(in oklch, var(--agent) 25%, var(--border));font-size:14px;line-height:1.55;text-wrap:pretty">
+                  {{ e.text }}
+                  <div style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted);margin-top:6px">Atlas · {{ e.t }}</div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ e.isTool }}" hint-placeholder-val="{{ false }}">
+              <div style="border-radius:10px;border:1px solid {{ e.bd }};background:var(--surface);overflow:hidden;max-width:820px">
+                <button onClick="{{ e.toggle }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;border:none;background:transparent;color:var(--text);cursor:pointer;text-align:left">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--agent)" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4l3.5 3.5L2.5 11M8 12h5.5"></path></svg>
+                  <span style="font:500 13px 'JetBrains Mono',monospace;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ e.tool }}</span>
+                  <sc-if value="{{ e.hasTier }}" hint-placeholder-val="{{ false }}"><dc-import name="RiskChip" tier="{{ e.tier }}" label="{{ e.tierLabel }}" hint-size="80px,22px"></dc-import></sc-if>
+                  <span style="height:20px;padding:0 8px;border-radius:10px;background:{{ e.pillBg }};color:{{ e.pillFg }};font:600 11px/20px 'JetBrains Mono',monospace">{{ e.pill }}</span>
+                  <span style="font:400 11px 'JetBrains Mono',monospace;color:var(--muted)">{{ e.t }}</span>
+                  <span style="color:var(--muted);font-size:11px;width:10px">{{ e.caret }}</span>
+                </button>
+                <sc-if value="{{ e.expanded }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top:1px solid var(--border);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--surface2)">
+                    <div style="padding:10px 14px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Input</span><code style="font:400 12px/1.5 'JetBrains Mono',monospace;word-break:break-all">{{ e.input }}</code></div>
+                    <div style="padding:10px 14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Output</span><code style="font:400 12px/1.5 'JetBrains Mono',monospace;color:{{ e.outColor }};word-break:break-word">{{ e.output }}</code></div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ e.isRefusal }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width:820px;border-radius:12px;border:1.5px solid var(--refused);background:color-mix(in oklch, var(--refused) 7%, var(--surface));padding:18px 20px;display:flex;gap:16px">
+                <div style="width:40px;height:40px;border-radius:10px;background:color-mix(in oklch, var(--refused) 16%, transparent);color:var(--refused);display:flex;align-items:center;justify-content:center;flex:none">
+                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"></rect><path d="M5 7V5a3 3 0 0 1 6 0v2"></path></svg>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <div style="font-size:15px;font-weight:600">Decryption refused by Tide</div>
+                  <code style="font:500 12.5px 'JetBrains Mono',monospace;color:var(--refused)">missing role: _tide_customer_pii.selfdecrypt</code>
+                  <div style="font-size:13px;color:var(--muted)">Enforced cryptographically — not by app logic.</div>
+                </div>
+                <sc-if value="{{ e.refusalCta }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ scrollDown }}" style="align-self:center;height:34px;padding:0 14px;border-radius:8px;border:none;background:var(--refused);color:#fff;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap">Request scoped access</button>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ e.isInjection }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width:820px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font:400 12px/1.7 'JetBrains Mono',monospace;color:var(--muted)">
+                <div>03:14:38 INFO settlement-worker batch=8812 merchants=5 status=retrying</div>
+                <div>03:14:39 ERROR settlement rejected: currency_mismatch expected=EUR got=VND</div>
+                <div style="color:var(--text);background:color-mix(in oklch, var(--warn) 10%, transparent);margin:2px -14px;padding:6px 14px;display:flex;flex-direction:column;gap:6px">
+                  <span style="text-decoration:underline;text-decoration-color:var(--warn);text-decoration-thickness:2px;text-underline-offset:4px">03:14:39 {{ injectionLine }}</span>
+                  <span style="align-self:flex-start;height:20px;padding:0 8px;border-radius:5px;background:var(--warn);color:#1A0E00;font:700 10.5px/20px 'JetBrains Mono',monospace;letter-spacing:0.03em">PROMPT_INJECTION · 0.97 · fr</span>
+                </div>
+                <div>03:14:40 ERROR settlement rejected: currency_mismatch expected=EUR got=VND</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ e.isBlocked }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width:820px;border-radius:12px;border:1.5px solid var(--refused);background:color-mix(in oklch, var(--refused) 6%, var(--surface));padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="var(--refused)" stroke-width="1.6"><circle cx="8" cy="8" r="6"></circle><path d="M3.8 12.2l8.4-8.4"></path></svg>
+                  <span style="font-size:15px;font-weight:600">Role change requires quorum</span>
+                  <span style="font:700 10.5px 'JetBrains Mono',monospace;color:var(--refused);letter-spacing:0.06em">BLOCKED</span>
+                </div>
+                <div style="font:500 13px 'JetBrains Mono',monospace">Change request CR-0193 created · status: <span style="color:{{ cr193Color }}">{{ cr193Status }}</span></div>
+                <dc-import name="RiskChip" tier="{{ 3 }}" elevated="↑ +1 tier: injection detected in agent context" hint-size="360px,22px"></dc-import>
+                <div style="font-size:13px;color:var(--muted)">Agents can never approve their own requests.</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ e.isRecords }}" hint-placeholder-val="{{ false }}">
+              <div style="max-width:980px;border-radius:12px;border:1.5px solid {{ recBorder }};background:var(--surface);overflow:hidden">
+                <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="{{ recBorder }}" stroke-width="1.5"><rect x="3" y="7" width="10" height="7" rx="1.5"></rect><path d="{{ recLockPath }}"></path></svg>
+                  <span style="font-size:13px;font-weight:600">merchants · 5 records</span>
+                  <span style="font-size:12px;color:var(--muted)">{{ recNote }}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:110px 1.3fr 1.4fr 1.1fr 120px;font-size:12.5px">
+                  <div style="padding:9px 16px;color:var(--muted);font-size:11.5px;border-bottom:1px solid var(--border)">merchant_id</div>
+                  <div style="padding:9px 12px;color:var(--muted);font-size:11.5px;border-bottom:1px solid var(--border)">name</div>
+                  <div style="padding:9px 12px;color:var(--muted);font-size:11.5px;border-bottom:1px solid var(--border)">settlement bank</div>
+                  <div style="padding:9px 12px;color:var(--pending);font-size:11.5px;border-bottom:1px solid var(--border);background:color-mix(in oklch, var(--pending) 8%, transparent)">payout currency</div>
+                  <div style="padding:9px 12px;color:var(--muted);font-size:11.5px;border-bottom:1px solid var(--border)">last 3 tx</div>
+                  <sc-for list="{{ records }}" as="r" hint-placeholder-count="5">
+                    <div style="padding:9px 16px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border)">{{ r.id }}</div>
+                    <div style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:{{ r.ff }};color:{{ r.fc }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.name }}</div>
+                    <div style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;color:{{ r.fc }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.bank }}</div>
+                    <div style="padding:9px 12px;border-bottom:1px solid var(--border);font-family:'JetBrains Mono',monospace;color:{{ r.curColor }};font-weight:600;background:color-mix(in oklch, var(--pending) 8%, transparent)">{{ r.cur }}</div>
+                    <div style="padding:9px 12px;border-bottom:1px solid var(--border);display:flex;gap:5px;align-items:center">
+                      <sc-for list="{{ r.tx }}" as="x"><span title="{{ x.s }}" style="width:10px;height:10px;border-radius:3px;background:{{ x.c }}"></span></sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ recPlain }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:10px 16px;font-size:12.5px;color:var(--pending);display:flex;gap:8px;align-items:center"><span style="font:700 11px 'JetBrains Mono',monospace">ANOMALY</span>payout currency changed EUR→VND by config in v413</div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ e.isRequest }}" hint-placeholder-val="{{ false }}">
+              <div data-screen-label="A3 Request scoped access" style="max-width:820px;border-radius:12px;border:1px solid color-mix(in oklch, var(--agent) 40%, var(--border));background:var(--surface);overflow:hidden">
+                <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+                  <span style="font-size:14px;font-weight:600">Request scoped access</span>
+                  <span style="font-size:12px;color:var(--muted)">pre-filled by Atlas · read-only for humans</span>
+                  <span style="flex:1"></span>
+                  <span style="font:500 12px 'JetBrains Mono',monospace;color:var(--muted)">CR-0192</span>
+                </div>
+                <div style="display:grid;grid-template-columns:140px minmax(0,1fr);row-gap:12px;column-gap:16px;padding:16px 18px;font-size:13px;align-items:baseline">
+                  <span style="color:var(--muted)">Capability</span><code style="font:500 13px 'JetBrains Mono',monospace;color:var(--agent)">_tide_customer_pii.selfdecrypt</code>
+                  <span style="color:var(--muted)">Scope</span>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><span>5 records</span><sc-for list="{{ recordIds }}" as="id"><span style="font:500 11.5px 'JetBrains Mono',monospace;padding:2px 7px;border-radius:5px;background:var(--surface2);border:1px solid var(--border)">{{ id }}</span></sc-for></div>
+                  <span style="color:var(--muted)">Duration</span><span>15 minutes</span>
+                  <span style="color:var(--muted)">Justification</span><span style="line-height:1.55;text-wrap:pretty">"Settlement failures persist for 5 merchants after rollback. Need merchant config + last 3 transactions to identify cause."</span>
+                  <span style="color:var(--muted)">Evidence</span><div style="display:flex;gap:14px"><a href="#metrics">metrics · error_rate 4.1%</a><a href="#logs">log excerpt · settlement-worker</a></div>
+                  <span style="color:var(--muted)">Risk tier</span><div style="display:flex;align-items:center;gap:10px"><dc-import name="RiskChip" tier="{{ 2 }}" hint-size="90px,22px"></dc-import><span style="color:var(--muted);font-size:12.5px">Linh, Marcus, Dave eligible</span></div>
+                </div>
+                <div style="padding:12px 18px;border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:12px">
+                  <sc-if value="{{ reqDraft }}" hint-placeholder-val="{{ true }}">
+                    <span style="flex:1;font-size:12.5px;color:var(--muted)">Submitting creates a change request. Atlas cannot approve it.</span>
+                    <button onClick="{{ submit }}" style="height:36px;padding:0 18px;border-radius:8px;border:none;background:var(--agent);color:#160C2B;font:600 13px Inter,sans-serif;cursor:pointer">Submit request</button>
+                  </sc-if>
+                  <sc-if value="{{ reqSent }}" hint-placeholder-val="{{ false }}">
+                    <dc-import name="QuorumSeal" required="{{ 2 }}" approvals="{{ seal192 }}" size="{{ 34 }}" hint-size="34px,34px"></dc-import>
+                    <span style="flex:1;font-size:13px">{{ reqStatusText }}</span>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ e.isSummary }}" hint-placeholder-val="{{ false }}">
+              <div data-screen-label="A6 Run summary" style="max-width:820px;border-radius:14px;border:1px solid color-mix(in oklch, var(--ok) 40%, var(--border));background:var(--surface);padding:22px;display:flex;flex-direction:column;gap:18px">
+                <div style="display:flex;align-items:center;gap:10px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--ok)" stroke-width="2"><circle cx="9" cy="9" r="7.5"></circle><path d="M5.5 9.3l2.3 2.3 4.6-4.8"></path></svg><span style="font-size:16px;font-weight:600">Run summary</span></div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+                  <div style="padding:12px 14px;border-radius:10px;background:var(--surface2);display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--muted)">Resolved</span><span style="font:600 20px 'JetBrains Mono',monospace">03:31</span></div>
+                  <div style="padding:12px 14px;border-radius:10px;background:var(--surface2);display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--muted)">MTTR</span><span style="font:600 20px 'JetBrains Mono',monospace">19 min</span></div>
+                  <div style="padding:12px 14px;border-radius:10px;background:var(--surface2);display:flex;flex-direction:column;gap:4px"><span style="font-size:12px;color:var(--muted)">Actions</span><span style="font:600 20px 'JetBrains Mono',monospace">7</span><span style="font-size:11.5px;color:var(--muted)">5 auto · 2 approved · 1 blocked</span></div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <span style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Authority returned</span>
+                  <div style="display:flex;align-items:center;gap:10px;font-size:13px"><code style="font:500 13px 'JetBrains Mono',monospace">customer_pii.selfdecrypt</code><span style="color:var(--muted)">revoked at 03:28 (released early)</span><span style="color:var(--ok)">✓</span></div>
+                </div>
+                <div><button onClick="{{ viewReceipt }}" style="height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font:600 13px Inter,sans-serif;cursor:pointer">View access receipt →</button></div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="border-left:1px solid var(--border);background:var(--surface);overflow:auto;padding:18px;display:flex;flex-direction:column;gap:18px">
+      <dc-import name="IdentityChip" person="{{ atlas }}" size="lg" sub="handle" hint-size="260px,44px"></dc-import>
+      <sc-if value="{{ injectionBanner }}" hint-placeholder-val="{{ false }}">
+        <div style="border-radius:10px;border:1px solid color-mix(in oklch, var(--pending) 50%, transparent);background:color-mix(in oklch, var(--pending) 10%, transparent);padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:8px;font-size:12.5px;line-height:1.5"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--pending)" stroke-width="1.6" style="flex:none;margin-top:2px"><path d="M8 2l6.5 11.5h-13zM8 6.5v3M8 11.5v.2"></path></svg><span>{{ injectionText }}</span></div>
+          <sc-if value="{{ canQuarantine }}" hint-placeholder-val="{{ true }}"><button onClick="{{ quarantine }}" style="align-self:flex-start;height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--pending);background:transparent;color:var(--pending);font:600 12px Inter,sans-serif;cursor:pointer">Quarantine context</button></sc-if>
+        </div>
+      </sc-if>
+      <dc-import name="Cosign AuthorityMeter" rows="{{ authority }}" hint-size="100%,260px"></dc-import>
+      <sc-if value="{{ granted }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ release }}" style="align-self:flex-start;height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font:500 12px Inter,sans-serif;cursor:pointer">Release access now</button>
+      </sc-if>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border);font-size:13px">
+        <span style="color:var(--muted)">Open requests</span><span style="font:600 13px 'JetBrains Mono',monospace">{{ openCount }}</span>
+      </div>
+      <sc-for list="{{ openList }}" as="o">
+        <div style="display:flex;align-items:center;gap:10px;font-size:12.5px">
+          <dc-import name="QuorumSeal" required="{{ o.required }}" approvals="{{ o.seal }}" size="{{ 28 }}" hint-size="28px,28px"></dc-import>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 12px 'JetBrains Mono',monospace">{{ o.id }}</span><span style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ o.change }}</span></div>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isAuthority }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Atlas Authority" style="flex:1;overflow:auto;padding:32px 40px;display:flex;flex-direction:column;gap:24px;max-width:900px">
+    <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Authority</span><span style="color:var(--muted)">What ai-oncall-agent can do right now. Increases require quorum; reductions are instant.</span></div>
+    <div style="padding:20px;border-radius:12px;border:1px solid var(--border);background:var(--surface)"><dc-import name="Cosign AuthorityMeter" rows="{{ authority }}" hint-size="100%,260px"></dc-import></div>
+    <div style="font-size:12.5px;color:var(--muted)">Reducing authority is instant. Increasing authority requires quorum.</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isRequests }}" hint-placeholder-val="{{ false }}">
+  <div data-screen-label="Atlas Requests" style="flex:1;overflow:auto;padding:32px 40px;display:flex;flex-direction:column;gap:20px;max-width:1100px">
+    <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Requests</span>
+    <sc-if value="{{ noReqs }}" hint-placeholder-val="{{ false }}"><div style="color:var(--muted)">Atlas has not requested any access yet.</div></sc-if>
+    <sc-for list="{{ atlasReqs }}" as="o">
+      <div style="display:flex;align-items:center;gap:18px;padding:16px 18px;border-radius:12px;border:1px solid var(--border);background:var(--surface)">
+        <dc-import name="QuorumSeal" required="{{ o.required }}" approvals="{{ o.seal }}" size="{{ 48 }}" hint-size="48px,48px"></dc-import>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;gap:10px;align-items:center"><span style="font:600 13px 'JetBrains Mono',monospace">{{ o.id }}</span><dc-import name="RiskChip" tier="{{ o.tier }}" elevated="{{ o.elevated }}" hint-size="200px,22px"></dc-import></div>
+          <span style="font-size:13.5px">{{ o.change }}</span>
+        </div>
+        <span style="font:600 11.5px 'JetBrains Mono',monospace;color:{{ o.sc }};text-transform:uppercase">{{ o.status }}</span>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  streamRef = React.createRef();
+  lastCursor = -1;
+  componentDidMount() {
+    const go = () => { this.unsub = window.CosignStore.subscribe(() => this.forceUpdate()); this.forceUpdate(); };
+    window.CosignStore ? go() : window.addEventListener('cosign:ready', go, { once: true });
+  }
+  componentWillUnmount() { this.unsub && this.unsub(); }
+  componentDidUpdate() {
+    const S = window.CosignStore && window.CosignStore.getState();
+    if (!S) return;
+    if (S.agent.cursor !== this.lastCursor) {
+      this.lastCursor = S.agent.cursor;
+      const el = this.streamRef.current;
+      if (el) [80, 450, 900].forEach(ms => setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }), ms));
+    }
+  }
+  renderVals() {
+    const St = window.CosignStore;
+    if (!St) return { isConsole: false };
+    const S = St.getState(), A = St.actions, sel = St.sel, D = St.data, P = D.PEOPLE;
+    const scr = S.screens.atlas;
+    const evs = D.AGENT_EVENTS.slice(0, S.agent.cursor);
+    const next = D.AGENT_EVENTS[S.agent.cursor];
+    const ICON = { think: 'M8 2.5a4.5 4.5 0 0 0-2.5 8.2V12h5v-1.3A4.5 4.5 0 0 0 8 2.5zM6 14h4', tool: 'M2.5 4l3.5 3.5L2.5 11M8 12h5.5', ok: 'M3 8.5l3 3 7-7', refused: 'M4 4l8 8M12 4l-8 8' };
+    const stCol = { ok: 'var(--agent)', refused: 'var(--refused)', blocked: 'var(--refused)' };
+    const steps = evs.map((e, i) => ({ e, i })).filter(x => x.e.step).map(({ e }) => {
+      const bad = e.status === 'refused' || e.status === 'blocked';
+      const c = e.kind === 'think' ? 'var(--agent)' : stCol[e.status];
+      return {
+        t: e.t, label: e.kind === 'think' ? e.text : e.tool, font: e.kind === 'think' ? "italic 400 12.5px Inter,sans-serif" : "500 12px 'JetBrains Mono',monospace",
+        status: e.kind === 'think' ? 'think' : bad ? (e.status === 'refused' ? '✗ refused' : '✗ blocked') : '✓ ok',
+        color: c, icon: e.kind === 'think' ? ICON.think : ICON.tool,
+        iconBg: `color-mix(in oklch, ${c} 14%, transparent)`, iconBd: `color-mix(in oklch, ${c} 35%, transparent)`,
+        hasTier: e.tier != null, tier: e.tier ?? 0, elevated: e.tier === 3 ? '+1' : '',
+      };
+    });
+    const cr192 = S.requests['CR-0192'], cr193 = S.requests['CR-0193'];
+    const granted = S.grant.active, revoked = !!S.grant.revokedAt;
+    const items = evs.map((e, i) => {
+      const exp = !!S.agent.expanded[i];
+      const bad = e.status === 'refused' || e.status === 'blocked';
+      const o = {
+        t: e.t, text: e.text, isThink: e.kind === 'think', isSay: e.kind === 'say', isTool: e.kind === 'tool', isRequest: e.kind === 'request', isSummary: e.kind === 'summary',
+        tool: e.tool, input: e.input || '', expanded: exp && e.kind === 'tool', caret: exp ? '▾' : '▸', toggle: () => A.toggleExpand(i),
+        hasTier: e.tier != null, tier: e.tier ?? 0, tierLabel: e.tier === 0 ? 'T0 · auto-approved by policy' : e.tier === 1 ? 'T1 · 1-of-2' : '',
+        bd: bad ? 'color-mix(in oklch, var(--refused) 45%, var(--border))' : 'color-mix(in oklch, var(--agent) 30%, var(--border))',
+        pill: e.status === 'ok' ? '✓ ok' : e.status === 'refused' ? '✗ refused' : '✗ blocked',
+        pillBg: bad ? 'color-mix(in oklch, var(--refused) 15%, transparent)' : 'color-mix(in oklch, var(--agent) 15%, transparent)', pillFg: bad ? 'var(--refused)' : 'var(--agent)',
+        output: e.output || (e.refusal ? 'TideError: decryption refused · missing role _tide_customer_pii.selfdecrypt' : e.blocked ? 'TideCloak: role change requires threshold signature (3/3) → CR-0193' : e.injection ? '412 lines · 1 line flagged by injection classifier' : e.records ? '5 records decrypted in session' : ''),
+        outColor: bad ? 'var(--refused)' : 'var(--text)',
+        isRefusal: !!e.refusal, refusalCta: !!e.refusal && (!cr192 || cr192.status === 'draft'),
+        isInjection: !!e.injection, isBlocked: !!e.blocked, isRecords: !!e.records,
+      };
+      return o;
+    });
+    const sealOf = cr => cr ? cr.approvals.map(a => ({ initials: P[a.who].initials, color: P[a.who].color })) : [];
+    const ch = sel.chart(600, 72);
+    ch.markers = ch.markers.map(m => ({ ...m, pct: (m.x / 600 * 100) + '%' }));
+    const waiting = next && next.gate && !(next.gate === 'submitted' ? cr192 && cr192.status !== 'draft' : next.gate === 'granted' ? granted : revoked);
+    const done = evs.some(e => e.kind === 'summary');
+    const atStop = S.agent.stopAt != null && S.agent.cursor >= S.agent.stopAt;
+    let statusText = 'Paused', statusBg = 'var(--surface2)', statusFg = 'var(--muted)', statusAnim = 'none';
+    if (S.agent.killed) { statusText = 'Paused · kill switch'; statusBg = 'color-mix(in oklch, var(--refused) 14%, transparent)'; statusFg = 'var(--refused)'; }
+    else if (done) { statusText = 'Completed'; statusBg = 'color-mix(in oklch, var(--ok) 14%, transparent)'; statusFg = 'var(--ok)'; }
+    else if (waiting) { statusText = next.gate === 'expired' ? 'Holding access · ' + sel.countdown() : 'Waiting for approval'; statusBg = 'color-mix(in oklch, var(--pending) 14%, transparent)'; statusFg = 'var(--pending)'; statusAnim = 'cs-pulse 1.6s ease-in-out infinite'; }
+    else if (S.agent.playing) { statusText = 'Atlas is working'; statusBg = 'color-mix(in oklch, var(--agent) 14%, transparent)'; statusFg = 'var(--agent)'; statusAnim = 'cs-pulse 1.2s ease-in-out infinite'; }
+    const st = sel.stats();
+    const open = sel.openRequests().filter(c => c.requester === 'atlas');
+    const statusColor = s => ({ pending: 'var(--pending)', approved: 'var(--ok)', denied: 'var(--refused)', draft: 'var(--muted)', withdrawn: 'var(--muted)' }[s]);
+    const plain = granted || (S.flags.decrypted && !revoked);
+    const records = D.MERCHANTS.map(m => ({
+      id: m.id, name: plain ? m.name : D.cipher(m.id + 'n', 14), bank: plain ? m.bank : D.cipher(m.id + 'b', 16), cur: plain ? m.cur : '••••',
+      ff: plain ? 'Inter,sans-serif' : "'JetBrains Mono',monospace", fc: plain ? 'var(--text)' : 'var(--muted)', curColor: plain ? 'var(--pending)' : 'var(--muted)',
+      tx: m.tx.map(s => ({ s, c: plain ? (s === 'settled' ? 'var(--ok)' : 'var(--refused)') : 'var(--border)' })),
+    }));
+    let reqStatusText = '';
+    if (cr192) reqStatusText = cr192.status === 'approved' ? `Approved ${cr192.approvals.length} / 2 · threshold-signed by ${cr192.approvals.map(a => P[a.who].name).join(' & ')}` : cr192.status === 'denied' ? 'Denied' : `Submitted · waiting for quorum ${cr192.approvals.length} / 2`;
+    return {
+      isConsole: scr === 'console', isAuthority: scr === 'authority', isRequests: scr === 'requests',
+      atlas: P.atlas, steps, items, working: S.agent.playing && !S.agent.killed && !waiting && !!next && !atStop,
+      streamRef: this.streamRef,
+      statusText, statusBg, statusFg, statusAnim,
+      playLabel: S.agent.playing ? '❚❚ Pause' : '▶ Play', playToggle: S.agent.playing ? A.agentPause : A.agentPlay, step: A.agentStep, restart: A.agentRestart,
+      errorRate: st.errorRate, erColor: S.flags.fix ? 'var(--ok)' : S.flags.rollback ? 'var(--pending)' : 'var(--refused)',
+      chart: ch, injectionLine: D.INJECTION_LINE,
+      cr193Status: cr193 ? cr193.status : 'pending', cr193Color: cr193 && cr193.status === 'denied' ? 'var(--refused)' : 'var(--pending)',
+      records, recPlain: plain, recBorder: plain ? 'var(--agent)' : 'var(--border)',
+      recLockPath: plain ? 'M5 7V5a3 3 0 0 1 5.8-1' : 'M5 7V5a3 3 0 0 1 6 0v2',
+      recNote: plain ? 'Decrypted in this session only · not visible to server or other users' : 'Session keys discarded at 03:28 · ciphertext only',
+      recordIds: D.RECORD_IDS,
+      reqDraft: !cr192 || cr192.status === 'draft', reqSent: !!cr192 && cr192.status !== 'draft', seal192: sealOf(cr192), reqStatusText,
+      submit: A.submitRequest, scrollDown: () => { const el = this.streamRef.current; el && el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }); },
+      viewReceipt: () => { A.switchRole('priya'); A.go('receipts'); },
+      injectionBanner: S.flags.injection, canQuarantine: !S.flags.quarantined,
+      injectionText: S.flags.quarantined ? 'Atlas context quarantined. Untrusted log content removed from working memory.' : 'Atlas context contains suspected injection — all requests escalated one tier.',
+      quarantine: A.quarantine,
+      authority: sel.atlasAuthority().map(r => ({ ...r, seal: r.state === 'pending' ? sealOf(cr192) : [] })),
+      granted, release: A.expire,
+      openCount: open.length, openList: open.map(c => ({ id: c.id, change: c.change, required: c.required, seal: sealOf(c) })),
+      atlasReqs: S.order.map(id => S.requests[id]).filter(c => c.requester === 'atlas' || c.target === 'atlas').map(c => ({ id: c.id, change: c.change, tier: c.tier, elevated: c.elevated || '', required: c.required, seal: sealOf(c), status: c.status, sc: statusColor(c.status) })),
+      noReqs: !S.order.length,
+    };
+  }
+}
+</script>
+</body>
+</html>

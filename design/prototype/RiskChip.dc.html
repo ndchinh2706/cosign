@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap">
+  <sc-if value="{{ t0 }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font:600 11px/1 'JetBrains Mono',monospace;white-space:nowrap">{{ label }}</span></sc-if>
+  <sc-if value="{{ t1 }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;border:1px solid color-mix(in oklch, var(--accent) 40%, transparent);background:color-mix(in oklch, var(--accent) 12%, transparent);color:var(--accent);font:600 11px/1 'JetBrains Mono',monospace;white-space:nowrap">{{ label }}</span></sc-if>
+  <sc-if value="{{ t2 }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;border:1px solid color-mix(in oklch, var(--pending) 40%, transparent);background:color-mix(in oklch, var(--pending) 12%, transparent);color:var(--pending);font:600 11px/1 'JetBrains Mono',monospace;white-space:nowrap">{{ label }}</span></sc-if>
+  <sc-if value="{{ t3 }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;border:1px solid color-mix(in oklch, var(--refused) 45%, transparent);background:color-mix(in oklch, var(--refused) 13%, transparent);color:var(--refused);font:600 11px/1 'JetBrains Mono',monospace;white-space:nowrap">
+    <sc-if value="{{ up }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 8.5V1.8M2 4.5l3-3 3 3"></path></svg></sc-if>{{ label }}</span></sc-if>
+  <sc-if value="{{ showReason }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;color:var(--refused);white-space:nowrap">{{ elevated }}</span></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:320,&quot;height&quot;:40},&quot;tier&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:2,&quot;tsType&quot;:&quot;0|1|2|3&quot;,&quot;min&quot;:0,&quot;max&quot;:3},&quot;elevated&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;label&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hideReason&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const t = this.props.tier ?? 0;
+    const labels = ['T0 Auto', 'T1 · 1-of-2', 'T2 · 2-of-3', 'T3 · 3-of-3'];
+    const el = this.props.elevated || '';
+    return { t0: t === 0, t1: t === 1, t2: t === 2, t3: t === 3, label: this.props.label || labels[t], up: !!el, elevated: el, showReason: !!el && !this.props.hideReason };
+  }
+}
+</script>
+</body>
+</html>
