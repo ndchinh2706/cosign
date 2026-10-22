@@ -6,14 +6,17 @@ export type DemoUser = {
   type: 'agent' | 'human'
   roles: string[]
   home: string
+  initials: string
+  color: string // identity tint, people at least 60° apart; the agent is grey
+  role: string
 }
 
 export const DEMO_USERS: DemoUser[] = [
-  { username: 'ai-oncall-agent', displayName: 'Atlas', short: 'Atlas', type: 'agent', roles: ['agent', '_tide_customer_pii.selfencrypt'], home: '/agent' },
-  { username: 'linh.tran', displayName: 'Linh Tran', short: 'Linh', type: 'human', roles: ['oncall', 'tide-realm-admin'], home: '/incidents' },
-  { username: 'marcus.lee', displayName: 'Marcus Lee', short: 'Marcus', type: 'human', roles: ['security-lead', 'tide-realm-admin', '_tide_customer_pii.selfencrypt', '_tide_customer_pii.selfdecrypt'], home: '/governance' },
-  { username: 'dave.kim', displayName: 'Dave Kim', short: 'Dave', type: 'human', roles: ['platform-admin', 'tide-realm-admin'], home: '/admin/users' },
-  { username: 'priya.nair', displayName: 'Priya Nair', short: 'Priya', type: 'human', roles: ['compliance'], home: '/audit' },
+  { username: 'ai-oncall-agent', displayName: 'Atlas', short: 'Atlas', type: 'agent', roles: ['agent', '_tide_customer_pii.selfencrypt'], home: '/agent', initials: 'AT', color: '#A9A9B0', role: 'AI on-call agent' },
+  { username: 'linh.tran', displayName: 'Linh Tran', short: 'Linh', type: 'human', roles: ['oncall', 'tide-realm-admin'], home: '/incidents', initials: 'LT', color: '#6FA8FF', role: 'On-call SRE' },
+  { username: 'marcus.lee', displayName: 'Marcus Lee', short: 'Marcus', type: 'human', roles: ['security-lead', 'tide-realm-admin', '_tide_customer_pii.selfencrypt', '_tide_customer_pii.selfdecrypt'], home: '/governance', initials: 'ML', color: '#3DD6C4', role: 'Security Lead' },
+  { username: 'dave.kim', displayName: 'Dave Kim', short: 'Dave', type: 'human', roles: ['platform-admin', 'tide-realm-admin'], home: '/admin/users', initials: 'DK', color: '#F59E6C', role: 'Platform Admin' },
+  { username: 'priya.nair', displayName: 'Priya Nair', short: 'Priya', type: 'human', roles: ['compliance'], home: '/audit', initials: 'PN', color: '#E68AD0', role: 'Compliance Officer' },
 ]
 
 export const findUser = (username: string) => DEMO_USERS.find((u) => u.username === username)

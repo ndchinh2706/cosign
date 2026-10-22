@@ -1,43 +1,57 @@
-/* Design tokens: docs/planning/COSIGN-SCREENS.md §1. Dark is default. */
+/* Design tokens: design/prototype/Cosign.dc.html helmet (tasteskill "data-terminal").
+   Colour lives on data, status and the quorum seal; every selection is a 1px accent line;
+   the agent is drawn in grey, people carry the hues. Dark is default. */
 :root,
 [data-theme='dark'] {
-  --bg: #0b0d12;
-  --surface: #12151c;
-  --surface-2: #191d26;
-  --border: #252a35;
-  --text: #e6e8ee;
-  --text-muted: #8a92a3;
-  --accent: #7c9cff;
-  --ok: #3dd68c;
-  --pending: #f5b83d;
-  --refused: #ff5c6c;
-  --agent: #b48cff;
+  --bg: #171719;
+  --surface: #131217;
+  --surface-2: #212023;
+  --border: #222224;
+  --rule: #1b1a1f;
+  --control: #3a3a3e;
+  --text: #ffffff;
+  --text-muted: #8a8c92;
+  --accent: #4a8ad6;
+  --ok: #44a282;
+  --pending: #d9a441;
+  --refused: #e5566f;
+  --warn: #d9a441;
+  --agent: #c9c9ce;
+  --primary: #f2f2f3;
+  --on-fill: #131217;
+  --shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
 
-  --tier-t0: #8a92a3;
+  --tier-t0: var(--text-muted);
   --tier-t1: var(--accent);
   --tier-t2: var(--pending);
   --tier-t3: var(--refused);
 
-  --radius: 8px;
-  --sidebar-w: 220px;
+  --radius: 6px;
+  --rail-w: 56px;
   --topbar-h: 56px;
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-public), Inter, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, 'SFMono-Regular', monospace;
   color-scheme: dark;
 }
 
 [data-theme='light'] {
-  --bg: #f6f7f9;
+  --bg: #f7f7f8;
   --surface: #ffffff;
-  --surface-2: #f0f2f5;
-  --border: #dde1e8;
-  --text: #12151c;
-  --text-muted: #5b6474;
-  --accent: #4f6fe0;
-  --ok: #1fa565;
-  --pending: #c98a0f;
-  --refused: #d93648;
-  --agent: #8a5ce0;
+  --surface-2: #f1f1f3;
+  --border: #e4e4e7;
+  --rule: #efeff1;
+  --control: #d1d1d6;
+  --text: #111113;
+  --text-muted: #5f6168;
+  --accent: #2f6fbd;
+  --ok: #1f7a4d;
+  --pending: #8f5a00;
+  --refused: #c4242a;
+  --warn: #8f5a00;
+  --agent: #45454c;
+  --primary: #1d1f20;
+  --on-fill: #ffffff;
+  --shadow: 0 12px 28px rgba(17, 17, 19, 0.12);
   color-scheme: light;
 }
 
@@ -51,13 +65,22 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
   color: inherit;
   text-decoration: none;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 code,
@@ -72,4 +95,197 @@ code,
 button {
   font: inherit;
   color: inherit;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--accent) 35%, transparent);
+}
+
+/* Controls: one filled primary per screen, the rest outlined or text. */
+.btn {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.btn:hover {
+  border-color: var(--control);
+}
+.btn-primary {
+  border: none;
+  background: var(--primary);
+  color: var(--on-fill);
+  font-weight: 600;
+}
+.btn-primary:hover {
+  opacity: 0.9;
+}
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--text-muted);
+  flex: none;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* Pale tint pill with text of the same hue. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex: none;
+  background: color-mix(in oklch, var(--c, var(--text-muted)) 14%, transparent);
+  color: var(--c, var(--text-muted));
+}
+
+@keyframes cs-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cs-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Shell: icon rail on desktop, bottom bar on phone. */
+.shell {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  min-height: 100vh;
+}
+.rail {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.rail nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+  flex: 1;
+}
+.rail-item {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: -1px;
+  border-right: 1px solid transparent;
+  color: var(--text-muted);
+  position: relative;
+}
+.rail-item:hover {
+  color: var(--text);
+}
+.rail-item[aria-current='page'] {
+  color: var(--text);
+  border-right-color: var(--accent);
+}
+.rail-badge {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--pending);
+  color: var(--on-fill);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
+}
+.topbar {
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg);
+}
+@media (max-width: 640px) {
+  .shell {
+    grid-template-columns: 1fr;
+    padding-bottom: 56px;
+  }
+  .rail {
+    position: fixed;
+    inset: auto 0 0 0;
+    height: 56px;
+    z-index: 30;
+    flex-direction: row;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .rail > :not(nav) {
+    display: none;
+  }
+  .rail nav {
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 0;
+  }
+  .rail-item {
+    height: 56px;
+    padding: 0 16px;
+    margin: 0;
+    border-right: none;
+  }
+  .topbar {
+    padding: 0 16px;
+    gap: 8px;
+  }
+  .desk {
+    display: none !important;
+  }
 }

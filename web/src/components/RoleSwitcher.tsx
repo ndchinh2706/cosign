@@ -1,28 +1,28 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { API_MODE, TIDE_MODE } from '@/lib/config'
+import { TIDE_MODE } from '@/lib/config'
 import { useSession } from '@/lib/session'
 import { DEMO_USERS } from '@/lib/users'
 import { useReplay } from '@/lib/ws'
 
-const ctrl = { padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }
-
-function ReplayControls() {
+// Storyboard controls float at the bottom, like the prototype's demo bar.
+export function ReplayControls() {
   const r = useReplay()
   const done = r.index >= r.total
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-      <button style={ctrl} onClick={r.playing ? r.pause : r.play} disabled={done && !r.playing}>
+    <div className="card desk" style={{ position: 'fixed', left: '50%', bottom: 16, transform: 'translateX(-50%)', zIndex: 50, display: 'flex', alignItems: 'center', gap: 4, padding: 6, fontSize: 12, boxShadow: 'var(--shadow)' }}>
+      <span className="muted" style={{ padding: '0 6px', maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.beat ?? 'Storyboard'}</span>
+      <button className="btn" style={{ height: 28, padding: '0 10px' }} onClick={r.playing ? r.pause : r.play} disabled={done && !r.playing}>
         {r.playing ? 'Pause' : 'Play'}
       </button>
-      <button style={ctrl} onClick={r.nextBeat} disabled={done || r.playing} title={r.beat ?? 'End of storyboard'}>
+      <button className="btn" style={{ height: 28, padding: '0 10px' }} onClick={r.nextBeat} disabled={done || r.playing} title={r.beat ?? 'End of storyboard'}>
         Next beat
       </button>
-      <button style={ctrl} onClick={r.reset} title="Reset storyboard">
-        ↺
+      <button className="btn" style={{ height: 28, padding: '0 10px' }} onClick={r.reset} title="Reset storyboard">
+        Reset
       </button>
-      <span className="mono muted" style={{ fontSize: 11 }}>
+      <span className="muted" style={{ minWidth: 40 }}>
         {r.index}/{r.total}
       </span>
     </div>
@@ -36,8 +36,8 @@ export function RoleSwitcher() {
 
   return (
     <>
-      {API_MODE === 'mock' && <ReplayControls />}
-      <div role="tablist" style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+      <div role="tablist" aria-label="Demo as" style={{ display: 'flex', alignItems: 'center', gap: 4, height: 34 }}>
+        <span className="muted" style={{ fontSize: 12, paddingRight: 4, whiteSpace: 'nowrap' }}>Demo as</span>
         {DEMO_USERS.map((u) => {
           const active = !live && u.username === demoUser
           return (
@@ -52,13 +52,20 @@ export function RoleSwitcher() {
                 router.push(u.home)
               }}
               style={{
-                padding: '4px 10px',
+                height: 34,
+                padding: '0 8px',
                 border: 0,
+                borderBottom: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                background: 'transparent',
                 cursor: 'pointer',
-                background: active ? 'var(--surface-2)' : 'transparent',
-                color: active ? (u.type === 'agent' ? 'var(--agent)' : 'var(--text)') : 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontWeight: 500,
+                color: active ? 'var(--text)' : 'var(--text-muted)',
               }}
             >
+              <span style={{ width: 7, height: 7, borderRadius: u.type === 'agent' ? 1 : '50%', background: u.color }} />
               {u.short}
             </button>
           )

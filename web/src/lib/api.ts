@@ -151,7 +151,11 @@ export function useApi<T = unknown>(path: string | null) {
     setNonce((n) => n + 1)
   }, [])
 
-  const setData = useCallback((data: T) => setState((s) => ({ ...s, data })), [])
+  const setData = useCallback(
+    (next: T | ((prev: T | undefined) => T | undefined)) =>
+      setState((s) => ({ ...s, data: typeof next === 'function' ? (next as (p: T | undefined) => T | undefined)(s.data) : next })),
+    [],
+  )
 
   return { ...state, mutate, setData }
 }
