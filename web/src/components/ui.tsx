@@ -153,3 +153,38 @@ export function QuorumSeal({ required, approvals, size = 96, sig }: { required: 
     </div>
   )
 }
+
+export type Authority = { capability: string; state: 'allowed' | 'locked' | 'pending' | 'granted'; expires_at?: string; reason?: string }
+
+const AUTH = {
+  allowed: { icon: 'check', c: 'var(--ok)', label: 'Allowed' },
+  locked: { icon: 'lock', c: 'var(--text-muted)', label: 'Locked' },
+  pending: { icon: 'clock', c: 'var(--pending)', label: 'Pending' },
+  granted: { icon: 'clock', c: 'var(--text)', label: 'Granted' },
+} as const
+
+// What an identity can do right now. Increases need quorum; reductions are instant.
+export function AuthorityMeter({ items, title = 'Current authority', pendingSeal }: { items: Authority[]; title?: string; pendingSeal?: { required: number; approvals: SealApproval[] } }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%' }}>
+      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{title}</h2>
+      <div className="card" style={{ overflow: 'hidden' }}>
+        {items.map((r) => {
+          const a = AUTH[r.state]
+          const sub = r.state === 'granted' && r.expires_at ? `Access expires at ${r.expires_at.slice(11, 16)}` : r.reason
+          return (
+            <div key={r.capability} style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 42, padding: '8px 12px', borderBottom: '1px solid var(--rule)' }}>
+              <Icon name={a.icon} size={14} color={a.c} />
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <code style={{ fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.capability}</code>
+                {sub && <span className="muted" style={{ fontSize: 12 }}>{sub}</span>}
+              </div>
+              {r.state === 'pending' && pendingSeal && <QuorumSeal required={pendingSeal.required} approvals={pendingSeal.approvals} size={26} />}
+              <span style={{ fontSize: 12, fontWeight: 500, color: a.c }}>{a.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
