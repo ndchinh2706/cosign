@@ -103,7 +103,8 @@ echo "Verify + enrollment links..."
 fail=0
 for row in "${USERS[@]}"; do
   IFS='|' read -r u _ _ roles <<<"$row"
-  T="$(token)"; id="$(uid "$u")"; user="$BODY"
+  T="$(token)"; call GET "users?username=$u&exact=true&briefRepresentation=false"; user="$BODY"
+  id="$(jq -r '.[0].id' <<<"$user")"
   call GET "users/$id/role-mappings/realm"
   for r in ${roles//,/ }; do
     jq -e --arg r "$r" 'any(.[]; .name==$r)' <<<"$BODY" >/dev/null || { echo "  MISSING $u: $r" >&2; fail=1; }
