@@ -133,6 +133,9 @@ class AccessService:
             "granted_at": r["granted_at"], "expires_at": r["expires_at"],
             "age_s": max(0, int((now() - parse(r["created_at"])).total_seconds())),
         }
+        if r["apply_status"]:
+            out["apply_status"] = r["apply_status"]
+            out["tide_change_request_id"] = r["tide_change_request_id"]
         decision = json.loads(r["decision_json"]) if r["decision_json"] else {}
         out.update(decision)
         return out
@@ -473,29 +476,39 @@ class AccessService:
         duration = min(overrides) if overrides else r["duration_min"]
         granted = now()
         expires = iso(granted + timedelta(minutes=duration)) if roles and duration else None
+        apply_status, tide_ids, apply_error = None, None, None
         if roles:
-            self.gov.apply(r["tide_cr_id"], r["target_user"], roles, [], expires)
+            try:
+                self.gov.apply(r["tide_cr_id"], r["target_user"], roles, [], expires)
+                apply_status = "applied"
+                tide_ids = ",".join(getattr(self.gov, "last_change_request_ids", [])) or None
+            except ApiError as exc:
+                apply_status, apply_error, expires = "failed", exc.message, None
         sig = signed[-1]["signature"] if signed else None
         ts = iso(granted)
         self.db.execute(
             "UPDATE access_requests SET status='approved', decided_at=?, granted_at=?, expires_at=?, signature=?,"
-            " duration_min=? WHERE id=?",
-            (ts, ts, expires, f"{sig} ({ORK} ORK)" if sig else None, duration, r["id"]))
+            " duration_min=?, apply_status=?, tide_change_request_id=? WHERE id=?",
+            (ts, None if apply_error else ts, expires, f"{sig} ({ORK} ORK)" if sig else None, duration,
+             apply_status, tide_ids, r["id"]))
         self.db.commit()
         r = self.row(r["id"])
         signers = [a["approver"] for a in signed] or ["policy"]
         await self._audit(actor=user.username if user else "policy", actor_type="human" if user else "system",
                           action="request.approved", target=f"{r['capability']}:{r['target_user']}",
                           outcome="signed", incident_id=r["incident_id"], request_id=r["id"],
-                          payload={"tier": r["tier"], "roles": roles, "expires_at": expires}, signers=signers)
+                          payload={"tier": r["tier"], "roles": roles, "expires_at": expires, "apply_status": apply_status,
+                                   "tide_change_request_id": tide_ids, "apply_error": apply_error},
+                          signers=signers)
         full = self.view(r)
-        await self._publish_request(r, "request.approved", {
-            "id": r["id"], "signature": sig, "ork_nodes": ORK, "signed_by": full["quorum"]["signed_by"],
-            "granted_at": ts, "expires_at": expires, "capability": r["capability"],
-            "target_user": r["target_user"]})
+        if not apply_error:
+            await self._publish_request(r, "request.approved", {
+                "id": r["id"], "signature": sig, "ork_nodes": ORK, "signed_by": full["quorum"]["signed_by"],
+                "granted_at": ts, "expires_at": expires, "capability": r["capability"],
+                "target_user": r["target_user"]})
         await self._publish_request(r, "request.updated", full)
         await self._publish_authority(r["target_user"], r["capability"], refresh=True)
-        if r["requester_type"] == "agent":
+        if r["requester_type"] == "agent" and not apply_error:
             await self._notify([r["requester"]], "agent", f"Request {r['id']} approved",
                                f"{r['capability']} granted" + (f" until {expires}" if expires else ""), r)
         return full

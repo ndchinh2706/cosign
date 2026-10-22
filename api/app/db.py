@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS access_requests (
   target_user TEXT, capability TEXT, roles_json TEXT, scope_json TEXT, duration_min INTEGER,
   justification TEXT, evidence_json TEXT, base_tier TEXT, tier TEXT, escalated INTEGER DEFAULT 0,
   escalation_reason TEXT, required INTEGER, eligible_json TEXT, status TEXT, flags_json TEXT,
-  tide_cr_id TEXT, signature TEXT, created_at TEXT, decided_at TEXT, granted_at TEXT, expires_at TEXT,
+  tide_cr_id TEXT, apply_status TEXT, tide_change_request_id TEXT, signature TEXT, created_at TEXT, decided_at TEXT, granted_at TEXT, expires_at TEXT,
   safety_checks_json TEXT, security_context_json TEXT, decision_json TEXT
 );
 CREATE TABLE IF NOT EXISTS approvals (
@@ -80,5 +80,9 @@ def init_db(path: str) -> sqlite3.Connection:
     for col in ("signature", "change"):
         if col not in cols:
             conn.execute(f"ALTER TABLE policy_versions ADD COLUMN {col} TEXT")
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(access_requests)")}
+    for col in ("apply_status", "tide_change_request_id"):
+        if col not in cols:
+            conn.execute(f"ALTER TABLE access_requests ADD COLUMN {col} TEXT")
     conn.commit()
     return conn
