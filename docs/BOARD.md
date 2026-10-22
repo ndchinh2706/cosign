@@ -85,9 +85,10 @@ Việc có thể bỏ nếu thiếu giờ, theo thứ tự bỏ trước: #22 C1
 
 ## 8. Bật agent khi tag `@claude`
 
-Workflow `.github/workflows/claude.yml` đã có trong repo nhưng cần cài Claude GitHub App và secret một lần (Chính làm, vì là owner):
+Workflow `.github/workflows/claude.yml` dùng **subscription Claude** (không cần API key) qua secret `CLAUDE_CODE_OAUTH_TOKEN`. Cài một lần (Chính, owner repo):
 
-- Cách nhanh: trong Claude Code tại repo này chạy `/install-github-app` và làm theo hướng dẫn. Lệnh này cài app và tạo secret.
-- Cách tay: cài app https://github.com/apps/claude cho repo `ndchinh2706/cosign`, rồi tạo secret `ANTHROPIC_API_KEY` (Settings → Secrets and variables → Actions).
+- Cài Claude GitHub App cho repo `ndchinh2706/cosign`: https://github.com/apps/claude
+- Tạo token từ subscription: mở terminal, chạy `claude setup-token`, đăng nhập, copy token.
+- Lưu thành secret: `gh secret set CLAUDE_CODE_OAUTH_TOKEN -R ndchinh2706/cosign` rồi dán token khi được hỏi.
 - Kiểm tra: comment `@claude đọc issue này và tóm tắt việc cần làm` trên một issue, xem tab Actions.
-- Lưu ý: workflow chạy được cả khi repo private (tính phút Actions). Khi chuyển public lúc 17:30, chỉ collaborator mới kích hoạt được.
+- Lưu ý: mỗi lần agent chạy sẽ trừ vào hạn mức subscription. Khi repo chuyển public lúc 17:30, chỉ collaborator mới kích hoạt được.
