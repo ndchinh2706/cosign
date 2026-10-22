@@ -23,4 +23,15 @@ Export từ project Claude Design "Câu hỏi prototype design" (22/10). Mở `p
 
 - Prototype mock giải mã bằng một endpoint server (`decrypt`). Contract thật: server chỉ trả ciphertext (`GET /records`), giải mã ở trình duyệt bằng `IAMService.doDecrypt`, sau đó báo `POST /records/access-log`.
 - Prototype gọi change request là `/change-requests`; contract dùng `/requests` và `PUT /admin/users/{username}/roles` → `202 quorum_required`.
-- Lỗi nhỏ còn tồn từ review: toast ở E5 autoplay chạm tab CR-0195; dưới 1920px header A1 xuống dòng (quay video ở 1920×1080).
+- Lỗi header A1 xuống dòng dưới 1920px đã sửa (rail 56px thay sidebar 232px). Toast giờ nằm ngay dưới top bar.
+
+## Rework theo taste skill (22/10)
+
+Style `data-terminal` (tasteskill app sheet, seed 535256986), dark + light qua `[data-theme]`.
+
+- Token ở helmet `Cosign.dc.html`, giữ tên biến cũ (`--bg --surface --surface2 --border --text --muted --accent --ok --pending --refused --warn --agent`), thêm `--primary --on-fill --rule --control --font --mono`. #17 chép khối này sang `web/src/app/globals.css`.
+- Font: Public Sans cho chữ và số (tabular). JetBrains Mono chỉ cho ID, hash, role, tool call, log.
+- Accent xanh `#4a8ad6` / `#2f6fbd` chỉ dùng cho vạch chọn 1px, cung QuorumSeal và dữ liệu đang có chữ ký ngưỡng. Agent màu xám (avatar lục giác), người giữ màu riêng. Bỏ indigo/tím.
+- Bỏ gradient, glow, blur, emoji, nhãn mono viết hoa, ô icon tô màu, chấm nhấp nháy. Nút chính là `--primary` (trắng trên dark, đen trên light).
+- Shell: icon rail 56px (bấm nút collapse để mở nhãn), top bar ghi scope `Northwind Pay · northwind-prod`. Dưới 640px rail thành bottom bar.
+- Mở thẳng một beat: `Cosign.dc.html?beat=10&theme=light&bar=0` (beat đánh số từ 0, `bar=0` ẩn thanh storyboard).

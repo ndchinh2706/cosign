@@ -7,28 +7,28 @@
 </head>
 <body>
 <x-dc>
-<div data-screen-label="E5 Mobile approval" style="width:390px;height:844px;border-radius:56px;padding:12px;background:#05060A;box-shadow:0 0 0 2px #2A2F3A, 0 30px 80px rgba(0,0,0,.5);flex:none;transform:scale({{ scale }});transform-origin:center">
+<div data-screen-label="E5 Mobile approval" style="width:390px;height:844px;border-radius:56px;padding:12px;background:#05060A;border:2px solid #2A2F3A;flex:none;transform:scale({{ scale }});transform-origin:center">
   <div style="position:relative;width:100%;height:100%;border-radius:44px;overflow:hidden;background:var(--bg);color:var(--text);display:flex;flex-direction:column">
-    <div style="height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 30px;font:600 15px Inter,sans-serif;position:relative;z-index:2">
+    <div style="height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 30px;font:600 16px var(--font);position:relative;z-index:2">
       <span>{{ time }}</span>
-      <div style="position:absolute;left:50%;top:11px;width:120px;height:34px;margin-left:-60px;border-radius:20px;background:#000"></div>
+      <div style="position:absolute;left:50%;top:11px;width:120px;height:34px;margin-left:-60px;border-radius:17px;background:#000"></div>
       <span style="display:flex;gap:6px;align-items:center;font-size:12px">5G <span style="width:24px;height:11px;border-radius:3px;border:1.5px solid currentColor;display:inline-block;position:relative"><span style="position:absolute;inset:1.5px;right:6px;background:currentColor;border-radius:1px"></span></span></span>
     </div>
 
     <sc-if value="{{ isLock }}" hint-placeholder-val="{{ true }}">
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 14px 0;background:radial-gradient(500px 500px at 50% 0%, color-mix(in oklch, var(--accent) 18%, var(--bg)) 0%, var(--bg) 70%)">
-        <span style="font-size:17px;font-weight:500;color:var(--muted)">Thursday, October 22</span>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;padding:30px 14px 0;background:var(--bg)">
+        <span style="font-size:16px;font-weight:500;color:var(--muted)">Thursday, October 22</span>
         <span style="font-size:88px;font-weight:600;letter-spacing:-0.04em;line-height:1.05">{{ time }}</span>
         <div style="flex:1"></div>
         <sc-if value="{{ hasNotif }}" hint-placeholder-val="{{ true }}">
-          <button onClick="{{ open }}" style="width:100%;display:flex;gap:12px;padding:14px;border-radius:22px;border:none;background:color-mix(in oklch, var(--surface) 82%, transparent);backdrop-filter:blur(20px);color:var(--text);text-align:left;cursor:pointer;font-family:inherit;margin-bottom:120px;animation:cs-in 400ms ease;box-shadow:var(--shadow)">
-            <div style="width:38px;height:38px;border-radius:9px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex:none">
+          <button onClick="{{ open }}" style="width:100%;display:flex;gap:12px;padding:14px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);text-align:left;cursor:pointer;font-family:inherit;margin-bottom:120px;animation:cs-in 400ms ease">
+            <div style="width:38px;height:38px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex:none">
               <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="11" stroke="var(--border)" stroke-width="3"></circle><path d="M14 3a11 11 0 0 1 10.4 14.6" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path><path d="M22.2 21.4A11 11 0 0 1 4 18" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"></path></svg>
             </div>
             <div style="flex:1;display:flex;flex-direction:column;gap:2px">
               <div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:600">Cosign</span><span style="font-size:12px;color:var(--muted)">now</span></div>
               <span style="font-size:14px;line-height:1.35">Atlas requests customer data access (INC-2417)</span>
-              <span style="font-size:12.5px;color:var(--muted)">5 records · 15 min · T2 · 0 of 2 signed</span>
+              <span style="font-size:13px;color:var(--muted)">5 records · 15 min · T2 · 0 of 2 signed</span>
             </div>
           </button>
         </sc-if>
@@ -39,36 +39,36 @@
     <sc-if value="{{ isReview }}" hint-placeholder-val="{{ false }}">
       <div style="flex:1;display:flex;flex-direction:column;min-height:0">
         <div style="display:flex;align-items:center;gap:10px;padding:8px 20px 14px">
-          <button onClick="{{ back }}" style="width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:15px">‹</button>
-          <div style="display:flex;flex-direction:column"><span style="font-size:16px;font-weight:600">Approval request</span><span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted)">CR-0192 · INC-2417</span></div>
+          <button onClick="{{ back }}" aria-label="Back" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"></path></svg></button>
+          <div style="display:flex;flex-direction:column"><h1 style="margin:0;font-size:20px;font-weight:600">Approval request</h1><span style="font:400 12px var(--mono);color:var(--muted)">CR-0192 · INC-2417</span></div>
         </div>
         <div style="flex:1;overflow:auto;padding:0 20px 20px;display:flex;flex-direction:column;gap:14px">
-          <div style="padding:16px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
+          <div style="padding:16px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;gap:12px">
             <dc-import name="IdentityChip" person="{{ atlas }}" size="md" sub="handle" hint-size="220px,32px"></dc-import>
-            <code style="font:500 13px 'JetBrains Mono',monospace;color:var(--agent);word-break:break-all">_tide_customer_pii.selfdecrypt</code>
+            <code style="font:500 13px var(--mono);word-break:break-all">_tide_customer_pii.selfdecrypt</code>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div style="padding:10px 12px;border-radius:10px;background:var(--surface2);display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:var(--muted)">Scope</span><span style="font-size:15px;font-weight:600">5 records</span></div>
-              <div style="padding:10px 12px;border-radius:10px;background:var(--surface2);display:flex;flex-direction:column;gap:2px"><span style="font-size:11.5px;color:var(--muted)">Duration</span><span style="font-size:15px;font-weight:600">15 min</span></div>
+              <div style="padding:10px 12px;border-radius:6px;background:var(--surface2);display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--muted)">Scope</span><span style="font-size:16px;font-weight:600">5 records</span></div>
+              <div style="padding:10px 12px;border-radius:6px;background:var(--surface2);display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--muted)">Duration</span><span style="font-size:16px;font-weight:600">15 min</span></div>
             </div>
             <dc-import name="RiskChip" tier="{{ 2 }}" hint-size="90px,22px"></dc-import>
           </div>
-          <div style="padding:18px;border-radius:16px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:18px">
+          <div style="padding:18px;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:18px">
             <dc-import name="QuorumSeal" required="{{ 2 }}" approvals="{{ seal }}" size="{{ 96 }}" hint-size="96px,96px"></dc-import>
-            <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;font-weight:600">{{ sealText }}</span><span style="font-size:12.5px;color:var(--muted)">Linh, Marcus, Dave eligible · requester cannot approve</span></div>
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;font-weight:600">{{ sealText }}</span><span style="font-size:13px;color:var(--muted)">Linh, Marcus, Dave eligible · requester cannot approve</span></div>
           </div>
-          <button onClick="{{ toggleChecks }}" style="padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:flex;flex-direction:column;gap:10px;cursor:pointer;text-align:left;font-family:inherit">
-            <div style="display:flex;width:100%;align-items:center;gap:8px"><span style="color:var(--ok);font-weight:700">✓</span><span style="flex:1;font-size:14px;font-weight:500">Safety checks · 3 passed</span><span style="color:var(--muted)">{{ caret }}</span></div>
+          <button onClick="{{ toggleChecks }}" style="padding:14px 16px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:flex;flex-direction:column;gap:10px;cursor:pointer;text-align:left;font-family:inherit">
+            <div style="display:flex;width:100%;align-items:center;gap:8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:0"><path d="M3 8.5l3 3 7-7"></path></svg><span style="flex:1;font-size:14px;font-weight:500">Safety checks · 3 passed</span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate({{ caretRot }});transition:transform 150ms"><path d="M6 3l5 5-5 5"></path></svg></div>
             <sc-if value="{{ checksOpen }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)">
-                <span>✓ Injection scan of agent context: clean</span><span>✓ Scope limited to incident records</span><span>✓ Duration ≤ policy max (30 min)</span><span>i Requester is agent → human quorum required</span>
+                <span style="display:flex;gap:8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M3 8.5l3 3 7-7"></path></svg>Injection scan of agent context: clean</span><span style="display:flex;gap:8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M3 8.5l3 3 7-7"></path></svg>Scope limited to incident records</span><span style="display:flex;gap:8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M3 8.5l3 3 7-7"></path></svg>Duration ≤ policy max (30 min)</span><span style="display:flex;gap:8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="flex:none;margin-top:2px"><path d="M8 7v5M8 4.2v.1"></path></svg>Requester is agent → human quorum required</span>
               </div>
             </sc-if>
           </button>
         </div>
         <div style="padding:12px 20px 34px;display:flex;flex-direction:column;align-items:center;gap:12px;border-top:1px solid var(--border);background:var(--surface)">
           <sc-if value="{{ canApprove }}" hint-placeholder-val="{{ true }}">
-            <button onClick="{{ approve }}" style="width:100%;height:56px;border-radius:16px;border:none;background:var(--accent);color:#0B0D12;font:600 17px Inter,sans-serif;cursor:pointer">Approve &amp; sign</button>
-            <button onClick="{{ deny }}" style="border:none;background:transparent;color:var(--refused);font:600 15px Inter,sans-serif;cursor:pointer;height:44px;padding:0 20px">Deny</button>
+            <button onClick="{{ approve }}" style="width:100%;height:56px;border-radius:6px;border:none;background:var(--primary);color:var(--on-fill);font:600 16px var(--font);cursor:pointer">Approve &amp; sign</button>
+            <button onClick="{{ deny }}" style="border:none;background:transparent;color:var(--refused);font:600 16px var(--font);cursor:pointer;height:44px;padding:0 20px">Deny</button>
           </sc-if>
           <sc-if value="{{ cantApprove }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;color:var(--muted);padding:16px 0">{{ cantText }}</span></sc-if>
         </div>
@@ -78,18 +78,18 @@
     <sc-if value="{{ isSigning }}" hint-placeholder-val="{{ false }}">
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px">
         <div style="width:44px;height:44px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--accent);animation:cs-spin 800ms linear infinite"></div>
-        <span style="font-size:17px;font-weight:600">Signing with Tide</span>
-        <span style="font:500 13px 'JetBrains Mono',monospace;color:var(--accent)">{{ nodes }} / 20 ORK nodes</span>
+        <span style="font-size:16px;font-weight:600">Signing with Tide</span>
+        <span style="font-size:13px;color:var(--muted)">{{ nodes }} / 20 ORK nodes</span>
         <div style="width:100%;display:grid;grid-template-columns:repeat(20,1fr);gap:3px"><sc-for list="{{ dots }}" as="d"><div style="height:6px;border-radius:2px;background:{{ d.c }}"></div></sc-for></div>
       </div>
     </sc-if>
 
     <sc-if value="{{ isSigned }}" hint-placeholder-val="{{ false }}">
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px;background:radial-gradient(400px 400px at 50% 45%, color-mix(in oklch, var(--ok) 16%, var(--bg)) 0%, var(--bg) 70%)">
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px;background:var(--bg)">
         <dc-import name="QuorumSeal" required="{{ 2 }}" approvals="{{ seal }}" size="{{ 200 }}" hint-size="200px,200px"></dc-import>
         <span style="font-size:26px;font-weight:600;color:var(--ok);letter-spacing:-0.01em">Signed · {{ signedN }} of 2</span>
         <span style="font-size:14px;color:var(--muted);text-align:center;line-height:1.5">{{ signedSub }}</span>
-        <button onClick="{{ back }}" style="margin-top:20px;height:46px;padding:0 26px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 15px Inter,sans-serif;cursor:pointer">Done</button>
+        <button onClick="{{ back }}" style="margin-top:20px;height:46px;padding:0 26px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 16px var(--font);cursor:pointer">Done</button>
       </div>
     </sc-if>
     <div style="position:absolute;bottom:8px;left:50%;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);opacity:.6"></div>
@@ -120,7 +120,7 @@ class Component extends DCLogic {
       isLock: v === 'lock', isReview: v === 'review', isSigning: v === 'signing', isSigned: v === 'signed',
       hasNotif: !!cr && can, noNotif: !(cr && can), open: A.phoneOpen, back: A.phoneBack,
       atlas: P.atlas, seal, sealText: n >= 2 ? 'Quorum reached · 2 of 2' : `${n} of 2 approvals`,
-      checksOpen: this.state.checksOpen, caret: this.state.checksOpen ? '▾' : '▸', toggleChecks: () => this.setState(s => ({ checksOpen: !s.checksOpen })),
+      checksOpen: this.state.checksOpen, caretRot: this.state.checksOpen ? '90deg' : '0deg', toggleChecks: () => this.setState(s => ({ checksOpen: !s.checksOpen })),
       canApprove: can, cantApprove: !can, cantText: !cr || cr.status === 'draft' ? 'No request yet.' : cr.approvals.some(a => a.who === 'linh') ? 'You already signed this request.' : 'Request is ' + cr.status + '.',
       approve: A.phoneApprove, deny: () => A.deny('CR-0192'),
       nodes: S.phoneNodes, dots: Array.from({ length: 20 }, (_, i) => ({ c: i < S.phoneNodes ? 'var(--accent)' : 'var(--border)' })),

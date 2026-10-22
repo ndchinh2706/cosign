@@ -10,27 +10,27 @@
 <div style="position:absolute;inset:0;overflow:auto;background:var(--bg)">
 <sc-if value="{{ isIncidents }}" hint-placeholder-val="{{ true }}">
   <div data-screen-label="E1 Incidents home" style="padding:28px 32px 100px;display:flex;flex-direction:column;gap:22px;max-width:1600px">
-    <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Incidents</span><span style="color:var(--muted);font-size:13px">Good morning, Linh. You are primary on-call until 09:00.</span></div>
+    <div style="display:flex;align-items:baseline;gap:12px"><h1 style="margin:0;font-size:24px;font-weight:600;letter-spacing:-0.015em">Incidents</h1><span style="color:var(--muted);font-size:13px">Good morning, Linh. You are primary on-call until 09:00.</span></div>
     <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
       <sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
-        <div style="padding:16px 18px;border-radius:12px;border:1px solid {{ s.bd }};background:var(--surface);display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:{{ s.c }};animation:{{ s.anim }}"></span><span style="font-size:12.5px;color:var(--muted)">{{ s.label }}</span></div>
-          <span style="font:600 28px 'JetBrains Mono',monospace;letter-spacing:-0.02em;color:{{ s.vc }}">{{ s.value }}</span>
+        <div style="padding:16px 18px;border-radius:6px;border:1px solid {{ s.bd }};background:var(--surface);display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:7px;height:7px;border-radius:50%;background:{{ s.c }};animation:{{ s.anim }}"></span><span style="font-size:13px;color:var(--muted)">{{ s.label }}</span></div>
+          <span style="font:600 28px var(--font);font-variant-numeric:tabular-nums;letter-spacing:-0.02em;color:{{ s.vc }}">{{ s.value }}</span>
         </div>
       </sc-for>
     </div>
     <div style="display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,1fr);gap:18px;align-items:start">
-      <div style="padding:22px;border-radius:14px;border:1px solid {{ incBorder }};background:var(--surface);display:flex;flex-direction:column;gap:18px">
+      <div style="padding:22px;border-radius:6px;border:1px solid {{ incBorder }};background:var(--surface);display:flex;flex-direction:column;gap:18px">
         <div style="display:flex;align-items:center;gap:12px">
-          <span style="font:600 15px 'JetBrains Mono',monospace">INC-2417</span>
-          <span style="height:20px;padding:0 7px;border-radius:5px;background:color-mix(in oklch, var(--refused) 16%, transparent);color:var(--refused);font:700 10.5px/20px 'JetBrains Mono',monospace">SEV-1</span>
-          <span style="height:22px;padding:0 9px;border-radius:11px;background:{{ incStatusBg }};color:{{ incStatusFg }};font:600 12px/22px Inter,sans-serif">{{ incStatus }}</span>
+          <span style="font:600 16px var(--mono)">INC-2417</span>
+          <span style="height:20px;padding:0 7px;border-radius:6px;background:color-mix(in oklch, var(--refused) 16%, transparent);color:var(--refused);font:700 12px/20px var(--mono)">SEV-1</span>
+          <span style="height:22px;padding:0 9px;border-radius:6px;background:{{ incStatusBg }};color:{{ incStatusFg }};font:600 12px/22px var(--font)">{{ incStatus }}</span>
           <span style="flex:1"></span>
-          <span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">started 03:12</span>
+          <span style="font:400 12px var(--mono);color:var(--muted)">started 03:12</span>
         </div>
         <div style="font-size:18px;font-weight:600">payments-api returning 502s · error rate {{ errorRate }}</div>
         <div style="display:flex;gap:28px;flex-wrap:wrap;font-size:13px">
-          <div style="display:flex;flex-direction:column;gap:6px"><span style="color:var(--muted);font-size:12px">Service</span><code style="font:500 13px 'JetBrains Mono',monospace">payments-api</code></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="color:var(--muted);font-size:12px">Service</span><code style="font:500 13px var(--mono)">payments-api</code></div>
           <div style="display:flex;flex-direction:column;gap:6px"><span style="color:var(--muted);font-size:12px">Owner</span><div style="display:flex;gap:14px;align-items:center"><dc-import name="IdentityChip" person="{{ atlas }}" size="xs" hint-size="80px,20px"></dc-import><span style="color:var(--muted)">agent ·</span><dc-import name="IdentityChip" person="{{ linh }}" size="xs" hint-size="90px,20px"></dc-import><span style="color:var(--muted)">human</span></div></div>
         </div>
         <div style="position:relative;height:90px">
@@ -39,39 +39,39 @@
             <polyline points="{{ chart.line }}" fill="none" stroke="var(--refused)" stroke-width="1.8" vector-effect="non-scaling-stroke"></polyline>
             <sc-for list="{{ chart.markers }}" as="m"><line x1="{{ m.x }}" x2="{{ m.x }}" y1="0" y2="90" stroke="{{ m.color }}" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line></sc-for>
           </svg>
-          <sc-for list="{{ chart.markers }}" as="m"><span style="position:absolute;top:-4px;left:{{ m.pct }};margin-left:4px;font:500 10.5px 'JetBrains Mono',monospace;color:{{ m.color }};white-space:nowrap">{{ m.label }}</span></sc-for>
+          <sc-for list="{{ chart.markers }}" as="m"><span style="position:absolute;top:-4px;left:{{ m.pct }};margin-left:4px;font:500 12px var(--mono);color:{{ m.color }};white-space:nowrap">{{ m.label }}</span></sc-for>
         </div>
         <div style="display:flex;flex-direction:column;gap:0">
           <sc-for list="{{ miniTimeline }}" as="t" hint-placeholder-count="4">
             <div style="display:flex;gap:12px;align-items:center;padding:6px 0;font-size:13px">
-              <span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted);width:62px">{{ t.ts }}</span>
+              <span style="font:400 12px var(--font);color:var(--muted);width:62px">{{ t.ts }}</span>
               <span style="width:8px;height:8px;border-radius:{{ t.r }};background:{{ t.c }}"></span>
               <span style="flex:1">{{ t.text }}</span>
             </div>
           </sc-for>
         </div>
-        <div><button onClick="{{ openWar }}" style="height:38px;padding:0 18px;border-radius:9px;border:none;background:var(--accent);color:#0B0D12;font:600 13.5px Inter,sans-serif;cursor:pointer">Open war room →</button></div>
+        <div><button onClick="{{ openWar }}" style="height:38px;padding:0 18px;border-radius:6px;border:none;background:var(--primary);color:var(--on-fill);font:600 13px var(--font);cursor:pointer">Open war room →</button></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:18px">
-        <div style="padding:18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px">
+        <div style="padding:18px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px">
           <span style="font-size:14px;font-weight:600">Needs your approval</span>
           <sc-if value="{{ noPending }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--muted)">Nothing waiting on you.</span></sc-if>
           <sc-for list="{{ pending }}" as="p" hint-placeholder-count="1">
-            <button onClick="{{ p.onClick }}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px solid color-mix(in oklch, var(--pending) 40%, var(--border));background:var(--surface2);cursor:pointer;text-align:left;color:var(--text);font-family:inherit">
+            <button onClick="{{ p.onClick }}" style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:6px;border:1px solid color-mix(in oklch, var(--pending) 40%, var(--border));background:var(--surface2);cursor:pointer;text-align:left;color:var(--text);font-family:inherit">
               <dc-import name="QuorumSeal" required="{{ p.required }}" approvals="{{ p.seal }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import>
               <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
-                <span style="font-size:13px;line-height:1.4"><b>{{ p.who }}</b> · <code style="font:500 12px 'JetBrains Mono',monospace;color:var(--agent)">{{ p.cap }}</code></span>
-                <div style="display:flex;gap:8px;align-items:center"><dc-import name="RiskChip" tier="{{ p.tier }}" elevated="{{ p.elevated }}" hide-reason="{{ true }}" hint-size="80px,22px"></dc-import><span style="font:400 11.5px 'JetBrains Mono',monospace;color:var(--muted)">{{ p.id }}</span></div>
+                <span style="font-size:13px;line-height:1.4"><b>{{ p.who }}</b> · <code style="font:500 12px var(--mono);color:var(--agent)">{{ p.cap }}</code></span>
+                <div style="display:flex;gap:8px;align-items:center"><dc-import name="RiskChip" tier="{{ p.tier }}" elevated="{{ p.elevated }}" hide-reason="{{ true }}" hint-size="80px,22px"></dc-import><span style="font:400 12px var(--mono);color:var(--muted)">{{ p.id }}</span></div>
               </div>
             </button>
           </sc-for>
         </div>
-        <div style="padding:18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:4px">
+        <div style="padding:18px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:4px">
           <span style="font-size:14px;font-weight:600;margin-bottom:8px">Services</span>
           <sc-for list="{{ services }}" as="s" hint-placeholder-count="3">
             <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
               <span style="width:8px;height:8px;border-radius:50%;background:{{ s.c }}"></span>
-              <code style="flex:1;font:500 13px 'JetBrains Mono',monospace">{{ s.name }}</code>
+              <code style="flex:1;font:500 13px var(--mono)">{{ s.name }}</code>
               <span style="font-size:12px;color:{{ s.c }}">{{ s.state }}</span>
             </div>
           </sc-for>
@@ -85,37 +85,37 @@
   <div data-screen-label="E2 War room" style="min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px">
     <div style="padding:24px 28px 100px;display:flex;flex-direction:column;gap:18px;min-width:0">
       <div style="display:flex;align-items:center;gap:12px">
-        <button onClick="{{ back }}" style="height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);font:500 12px Inter,sans-serif;cursor:pointer">← Incidents</button>
-        <span style="font:600 18px 'JetBrains Mono',monospace">INC-2417</span>
-        <span style="height:20px;padding:0 7px;border-radius:5px;background:color-mix(in oklch, var(--refused) 16%, transparent);color:var(--refused);font:700 10.5px/20px 'JetBrains Mono',monospace">SEV-1</span>
-        <span style="height:22px;padding:0 9px;border-radius:11px;background:{{ incStatusBg }};color:{{ incStatusFg }};font:600 12px/22px Inter,sans-serif">{{ incStatus }}</span>
+        <button onClick="{{ back }}" style="height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font:500 12px var(--font);cursor:pointer">← Incidents</button>
+        <span style="font:600 18px var(--font);font-variant-numeric:tabular-nums">INC-2417</span>
+        <span style="height:20px;padding:0 7px;border-radius:6px;background:color-mix(in oklch, var(--refused) 16%, transparent);color:var(--refused);font:700 12px/20px var(--mono)">SEV-1</span>
+        <span style="height:22px;padding:0 9px;border-radius:6px;background:{{ incStatusBg }};color:{{ incStatusFg }};font:600 12px/22px var(--font)">{{ incStatus }}</span>
         <span style="flex:1"></span>
-        <span style="font:500 13px 'JetBrains Mono',monospace;color:var(--muted)">elapsed {{ elapsed }}</span>
+        <span style="font:500 13px var(--mono);color:var(--muted)">elapsed {{ elapsed }}</span>
       </div>
       <div style="display:flex;gap:4px;border-bottom:1px solid var(--border)">
         <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
-          <button onClick="{{ t.onClick }}" style="height:38px;padding:0 14px;border:none;border-bottom:2px solid {{ t.bd }};background:transparent;color:{{ t.fg }};font:600 13px Inter,sans-serif;cursor:pointer;margin-bottom:-1px">{{ t.label }}</button>
+          <button onClick="{{ t.onClick }}" style="height:38px;padding:0 14px;border:none;border-bottom:2px solid {{ t.bd }};background:transparent;color:{{ t.fg }};font:600 13px var(--font);cursor:pointer;margin-bottom:-1px">{{ t.label }}</button>
         </sc-for>
       </div>
       <sc-if value="{{ tabTimeline }}" hint-placeholder-val="{{ true }}">
         <div style="display:flex;flex-direction:column">
           <sc-for list="{{ timeline }}" as="t" hint-placeholder-count="6">
             <div style="display:flex;gap:14px;align-items:flex-start">
-              <span style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted);width:66px;padding-top:12px">{{ t.ts }}</span>
+              <span style="font:400 12px var(--font);color:var(--muted);width:66px;padding-top:12px">{{ t.ts }}</span>
               <div style="display:flex;flex-direction:column;align-items:center;align-self:stretch"><span style="width:10px;height:10px;margin-top:14px;border-radius:{{ t.r }};background:{{ t.c }};flex:none"></span><span style="flex:1;width:1px;background:var(--border)"></span></div>
-              <div style="flex:1;padding:9px 12px;margin:3px 0;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:10px;min-width:0">
+              <div style="flex:1;padding:9px 12px;margin:3px 0;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:10px;min-width:0">
                 <span style="font-size:13px;font-weight:600;white-space:nowrap">{{ t.actor }}</span>
-                <code style="font:500 12px 'JetBrains Mono',monospace;color:var(--muted)">{{ t.action }}</code>
+                <code style="font:500 12px var(--mono);color:var(--muted)">{{ t.action }}</code>
                 <span style="font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ t.target }}</span>
-                <span style="font:600 10.5px 'JetBrains Mono',monospace;color:{{ t.c }};text-transform:uppercase">{{ t.outcome }}</span>
+                <span style="font:600 12px var(--font);color:{{ t.c }};">{{ t.outcome }}</span>
               </div>
             </div>
           </sc-for>
         </div>
       </sc-if>
       <sc-if value="{{ tabMetrics }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:22px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:14px">
-          <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:14px;font-weight:600">payments-api · error rate</span><span style="font:600 18px 'JetBrains Mono',monospace">{{ errorRate }}</span></div>
+        <div style="padding:22px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:baseline;gap:12px"><span style="font-size:14px;font-weight:600">payments-api · error rate</span><span style="font:600 18px var(--font);font-variant-numeric:tabular-nums">{{ errorRate }}</span></div>
           <div style="position:relative;height:300px">
             <svg viewBox="0 0 1000 300" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
               <line x1="0" x2="1000" y1="75" y2="75" stroke="var(--border)" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="150" y2="150" stroke="var(--border)" vector-effect="non-scaling-stroke"></line><line x1="0" x2="1000" y1="225" y2="225" stroke="var(--border)" vector-effect="non-scaling-stroke"></line>
@@ -123,28 +123,28 @@
               <polyline points="{{ bigChart.line }}" fill="none" stroke="var(--refused)" stroke-width="2" vector-effect="non-scaling-stroke"></polyline>
               <sc-for list="{{ bigChart.markers }}" as="m"><line x1="{{ m.x }}" x2="{{ m.x }}" y1="0" y2="300" stroke="{{ m.color }}" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"></line></sc-for>
             </svg>
-            <sc-for list="{{ bigChart.markers }}" as="m"><span style="position:absolute;top:0;left:{{ m.pct }};margin-left:6px;font:500 11.5px 'JetBrains Mono',monospace;color:{{ m.color }};white-space:nowrap">{{ m.label }}</span></sc-for>
+            <sc-for list="{{ bigChart.markers }}" as="m"><span style="position:absolute;top:0;left:{{ m.pct }};margin-left:6px;font:500 12px var(--mono);color:{{ m.color }};white-space:nowrap">{{ m.label }}</span></sc-for>
           </div>
-          <div style="display:flex;justify-content:space-between;font:400 11px 'JetBrains Mono',monospace;color:var(--muted)"><span>03:00</span><span>03:10</span><span>03:20</span><span>03:31</span></div>
+          <div style="display:flex;justify-content:space-between;font:400 12px var(--mono);color:var(--muted)"><span>03:00</span><span>03:10</span><span>03:20</span><span>03:31</span></div>
         </div>
       </sc-if>
       <sc-if value="{{ tabAgent }}" hint-placeholder-val="{{ false }}">
-        <div style="padding:18px;border-radius:12px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px">
+        <div style="padding:18px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;gap:12px">
           <span style="font-size:13px;color:var(--muted)">Full agent run is mirrored in the right panel. Open Atlas's console for the live stream.</span>
-          <div><button onClick="{{ openAtlas }}" style="height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--agent);background:transparent;color:var(--agent);font:600 13px Inter,sans-serif;cursor:pointer">Open Agent Console</button></div>
+          <div><button onClick="{{ openAtlas }}" style="height:34px;padding:0 14px;border-radius:6px;border:1px solid var(--agent);background:transparent;color:var(--agent);font:600 13px var(--font);cursor:pointer">Open Agent Console</button></div>
         </div>
       </sc-if>
       <sc-if value="{{ tabAccess }}" hint-placeholder-val="{{ false }}">
         <div style="display:flex;flex-direction:column;gap:10px">
-          <sc-if value="{{ noAccess }}" hint-placeholder-val="{{ false }}"><div style="padding:40px;border-radius:12px;border:1px dashed var(--border);color:var(--muted);text-align:center;font-size:13.5px">No access requests for this incident yet</div></sc-if>
+          <sc-if value="{{ noAccess }}" hint-placeholder-val="{{ false }}"><div style="padding:40px;border-radius:6px;border:1px dashed var(--border);color:var(--muted);text-align:center;font-size:13px">No access requests for this incident yet</div></sc-if>
           <sc-for list="{{ access }}" as="a" hint-placeholder-count="3">
-            <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface)">
+            <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface)">
               <dc-import name="QuorumSeal" required="{{ a.required }}" approvals="{{ a.seal }}" size="{{ 40 }}" hint-size="40px,40px"></dc-import>
-              <span style="font:600 13px 'JetBrains Mono',monospace;width:80px">{{ a.id }}</span>
+              <span style="font:600 13px var(--mono);width:80px">{{ a.id }}</span>
               <dc-import name="IdentityChip" person="{{ a.requester }}" size="xs" hint-size="100px,20px"></dc-import>
               <span style="flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.change }}</span>
               <dc-import name="RiskChip" tier="{{ a.tier }}" elevated="{{ a.elevated }}" hide-reason="{{ true }}" hint-size="90px,22px"></dc-import>
-              <span style="font:600 11px 'JetBrains Mono',monospace;color:{{ a.sc }};text-transform:uppercase;width:80px;text-align:right">{{ a.status }}</span>
+              <span style="font:600 12px var(--font);color:{{ a.sc }};width:80px;text-align:right">{{ a.status }}</span>
             </div>
           </sc-for>
         </div>
@@ -152,13 +152,13 @@
     </div>
     <aside style="border-left:1px solid var(--border);background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px">
       <div style="display:flex;align-items:center;justify-content:space-between"><dc-import name="IdentityChip" person="{{ atlas }}" size="sm" sub="role" hint-size="150px,26px"></dc-import>
-        <button onClick="{{ pauseAgent }}" style="height:28px;padding:0 10px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text);font:600 12px Inter,sans-serif;cursor:pointer">{{ pauseLabel }}</button></div>
+        <button onClick="{{ pauseAgent }}" style="height:28px;padding:0 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);font:600 12px var(--font);cursor:pointer">{{ pauseLabel }}</button></div>
       <div style="display:flex;flex-direction:column;gap:2px">
         <sc-for list="{{ agentSteps }}" as="s" hint-placeholder-count="5">
           <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
             <span style="width:7px;height:7px;margin-top:5px;border-radius:2px;background:{{ s.c }};flex:none"></span>
-            <code style="flex:1;font:400 11.5px/1.45 'JetBrains Mono',monospace;word-break:break-word">{{ s.label }}</code>
-            <span style="font:400 10.5px 'JetBrains Mono',monospace;color:var(--muted)">{{ s.t }}</span>
+            <code style="flex:1;font:400 12px/1.45 var(--mono);word-break:break-word">{{ s.label }}</code>
+            <span style="font:400 12px var(--font);color:var(--muted)">{{ s.t }}</span>
           </div>
         </sc-for>
       </div>
@@ -168,12 +168,12 @@
 
 <sc-if value="{{ isApprovals }}" hint-placeholder-val="{{ false }}">
   <div data-screen-label="E3 Approval review" style="padding:24px 28px 100px;display:flex;flex-direction:column;gap:18px">
-    <div style="display:flex;align-items:center;gap:12px"><span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Approvals</span><span style="color:var(--muted);font-size:13px">Requests where you are an eligible approver</span></div>
-    <sc-if value="{{ noReqs }}" hint-placeholder-val="{{ false }}"><div style="padding:40px;border-radius:12px;border:1px dashed var(--border);color:var(--muted);text-align:center">No requests yet.</div></sc-if>
+    <div style="display:flex;align-items:center;gap:12px"><h1 style="margin:0;font-size:24px;font-weight:600;letter-spacing:-0.015em">Approvals</h1><span style="color:var(--muted);font-size:13px">Requests where you are an eligible approver</span></div>
+    <sc-if value="{{ noReqs }}" hint-placeholder-val="{{ false }}"><div style="padding:40px;border-radius:6px;border:1px dashed var(--border);color:var(--muted);text-align:center">No requests yet.</div></sc-if>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <sc-for list="{{ reqTabs }}" as="r">
-        <button onClick="{{ r.onClick }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;border:1px solid {{ r.bd }};background:{{ r.bg }};color:var(--text);font:600 12.5px 'JetBrains Mono',monospace;cursor:pointer">
-          <span style="width:7px;height:7px;border-radius:50%;background:{{ r.dot }}"></span>{{ r.id }}<span style="font:500 12px Inter,sans-serif;color:var(--muted)">{{ r.short }}</span>
+        <button onClick="{{ r.onClick }}" style="display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:6px;border:1px solid {{ r.bd }};background:{{ r.bg }};color:var(--text);font:600 13px var(--mono);cursor:pointer">
+          <span style="width:7px;height:7px;border-radius:50%;background:{{ r.dot }}"></span>{{ r.id }}<span style="font:500 12px var(--font);color:var(--muted)">{{ r.short }}</span>
         </button>
       </sc-for>
     </div>
@@ -183,11 +183,11 @@
 
 <sc-if value="{{ isServices }}" hint-placeholder-val="{{ false }}">
   <div data-screen-label="Linh Services" style="padding:28px 32px;display:flex;flex-direction:column;gap:18px;max-width:1100px">
-    <span style="font-size:22px;font-weight:600;letter-spacing:-0.015em">Services</span>
-    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface)">
+    <h1 style="margin:0;font-size:24px;font-weight:600;letter-spacing:-0.015em">Services</h1>
+    <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--surface)">
       <sc-for list="{{ services }}" as="s">
         <div style="display:grid;grid-template-columns:24px 1.4fr 1fr 1fr 120px;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px">
-          <span style="width:9px;height:9px;border-radius:50%;background:{{ s.c }}"></span><code style="font:500 13px 'JetBrains Mono',monospace">{{ s.name }}</code><span style="color:var(--muted)">{{ s.owner }}</span><code style="font:400 12px 'JetBrains Mono',monospace;color:var(--muted)">{{ s.region }}</code><span style="color:{{ s.c }}">{{ s.state }}</span>
+          <span style="width:9px;height:9px;border-radius:50%;background:{{ s.c }}"></span><code style="font:500 13px var(--mono)">{{ s.name }}</code><span style="color:var(--muted)">{{ s.owner }}</span><code style="font:400 12px var(--mono);color:var(--muted)">{{ s.region }}</code><span style="color:{{ s.c }}">{{ s.state }}</span>
         </div>
       </sc-for>
     </div>
