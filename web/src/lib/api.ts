@@ -107,6 +107,8 @@ export function setTokenGetter(fn: (() => Promise<string | null>) | null) {
   tokenGetter = fn
 }
 
+export const getAuthToken = () => (TIDE_MODE === 'live' && tokenGetter ? tokenGetter() : Promise.resolve(null))
+
 async function authHeaders(): Promise<Record<string, string>> {
   if (TIDE_MODE === 'live' && tokenGetter) {
     const token = await tokenGetter()

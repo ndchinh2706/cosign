@@ -24,6 +24,8 @@ export type ChangeRequest = {
   safety_checks: { id: string; label: string; status: 'pass' | 'fail' | 'warn' | 'info'; detail?: string }[]
   flags: string[]
   incident_id?: string
+  apply_status?: 'applied' | 'failed' // docs/API.md §11: approved but Tide did not apply the role
+  tide_change_request_id?: string | null
   created_at: string
 }
 

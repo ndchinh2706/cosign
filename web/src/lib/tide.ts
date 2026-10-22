@@ -23,6 +23,7 @@ export type TideApi = {
   login: () => Promise<void>
   logout: () => Promise<void>
   getToken: () => Promise<string | null>
+  refreshToken: () => Promise<boolean>
   hasRealmRole: (role: string) => boolean
   doEncrypt: (items: EncryptItem[]) => Promise<string[]>
   doDecrypt: (items: DecryptItem[]) => Promise<string[]>
@@ -67,6 +68,8 @@ async function mockDecrypt(items: DecryptItem[]): Promise<string[]> {
   })
 }
 
+const mockRefresh = async () => true
+
 function useMockTide(): TideApi {
   return {
     mode: 'mock',
@@ -75,6 +78,7 @@ function useMockTide(): TideApi {
     login: async () => {},
     logout: async () => {},
     getToken: async () => null,
+    refreshToken: mockRefresh,
     hasRealmRole: (role) => mockRoles().includes(role),
     doEncrypt: async (items) => items.map((i) => MOCK_PREFIX + 'b64:' + b64(i.data)),
     doDecrypt: mockDecrypt,
@@ -90,6 +94,7 @@ function useLiveTide(): TideApi {
     login: tc.login,
     logout: tc.logout,
     getToken: tc.getToken,
+    refreshToken: tc.forceRefreshToken,
     hasRealmRole: tc.hasRealmRole,
     doEncrypt: (items) => tc.doEncrypt(items),
     doDecrypt: async (items) => {

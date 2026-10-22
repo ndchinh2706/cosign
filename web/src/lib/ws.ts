@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { loadMock } from './api'
+import { getAuthToken, loadMock } from './api'
 import { API_MODE, TIDE_MODE, WS_URL } from './config'
 import { getDemoUser } from './users'
 
@@ -42,7 +42,7 @@ export function useCosignSocket(channels: string[], opts: SocketOptions = {}) {
   const [status, setStatus] = useState<Status>('idle')
   const [lastEvent, setLastEvent] = useState<Envelope | null>(null)
   const channelKey = channels.join(',')
-  const { console: isConsole = false, getToken } = opts
+  const { console: isConsole = false, getToken = getAuthToken } = opts
 
   const dispatch = useCallback((e: Envelope) => {
     setLastEvent(e)
@@ -74,7 +74,7 @@ export function useCosignSocket(channels: string[], opts: SocketOptions = {}) {
       const ws = new WebSocket(WS_URL)
       wsRef.current = ws
       ws.onopen = async () => {
-        const token = TIDE_MODE === 'live' && getToken ? await getToken() : null
+        const token = TIDE_MODE === 'live' ? await getToken() : null
         ws.send(JSON.stringify(envelope('auth', token ? { token } : { demo_user: getDemoUser() })))
       }
       ws.onmessage = (m) => {

@@ -46,7 +46,7 @@ export function RequestReview({ cr, onChange, security, children }: { cr: Change
   const flagged = security && cr.flags.includes('injection')
   const signed = cr.quorum.signed_by
   const n = signed.length
-  const progress = cr.status === 'approved' ? `Quorum reached · ${n} of ${cr.quorum.required}` : cr.status === 'pending' ? `${n} of ${cr.quorum.required} approvals${n ? ` · waiting for ${cr.quorum.required - n} more` : ''}` : cr.status
+  const progress = cr.apply_status === 'failed' ? 'Quorum reached · Tide did not apply the role' : cr.status === 'approved' ? `Quorum reached · ${n} of ${cr.quorum.required}` : cr.status === 'pending' ? `${n} of ${cr.quorum.required} approvals${n ? ` · waiting for ${cr.quorum.required - n} more` : ''}` : cr.status
   const deny = async (quarantine = false) => {
     try {
       onChange(await apiPost<ChangeRequest>(`/requests/${cr.id}/deny`, { reason: 'Denied in review', quarantine_agent_context: quarantine }))
@@ -106,7 +106,8 @@ export function RequestReview({ cr, onChange, security, children }: { cr: Change
           <QuorumSeal required={cr.quorum.required} approvals={signed} size={150} sig={signed.at(-1)?.signature} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0 }}>
             <RiskChip tier={cr.tier} elevated={cr.escalated ? `↑ +1 tier: ${cr.escalation_reason}` : undefined} />
-            <span style={{ fontSize: 14, fontWeight: 600, color: STATUS_C[cr.status] === 'var(--pending)' ? 'var(--text)' : STATUS_C[cr.status] }}>{progress}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: cr.apply_status === 'failed' ? 'var(--refused)' : STATUS_C[cr.status] === 'var(--pending)' ? 'var(--text)' : STATUS_C[cr.status] }}>{progress}</span>
+            {cr.tide_change_request_id && <code className="muted" style={{ fontSize: 11, overflowWrap: 'anywhere' }}>Tide CR {cr.tide_change_request_id}</code>}
             <span className="muted" style={{ fontSize: 12 }}>Requester cannot approve</span>
           </div>
         </div>
@@ -185,7 +186,8 @@ export function SignModal({ cr, onClose, onSigned }: { cr: ChangeRequest; onClos
                 </div>
               </div>
             )}
-            {result && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ok)' }}>{result.status === 'approved' ? `Quorum reached · ${done} of ${result.quorum.required} approvals` : `${done} of ${result.quorum.required} approvals · waiting for ${result.quorum.required - done} more`}</div>}
+            {result?.apply_status === 'failed' && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--refused)' }}>Quorum reached, but Tide did not apply the role. No access was granted.</div>}
+            {result && result.apply_status !== 'failed' && <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ok)' }}>{result.status === 'approved' ? `Quorum reached · ${done} of ${result.quorum.required} approvals` : `${done} of ${result.quorum.required} approvals · waiting for ${result.quorum.required - done} more`}</div>}
           </div>
         </div>
         <div style={{ padding: '16px 26px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10, background: 'var(--surface-2)' }}>
