@@ -15,6 +15,13 @@ Hạn nộp: **18:00 22/10/2026** (giờ VN). Tài liệu này là board thực 
 - Kéo thẻ khi đổi trạng thái; đồng thời giữ label `status:*` cho người xem từ issue list. Issue đóng hoặc PR merge thì GitHub tự chuyển Done.
 - Issue mới tạo: thêm vào project bằng ô Projects bên phải issue (hoặc bật Workflows → Auto-add trong settings project).
 
+**Trạng thái lúc 13:40 (hạn mức Claude chạm 99%, tạm dừng tới 15:00):**
+- Đã merge: scaffold, #1 spike (PR #31), #7 #8 (PR #33), #9 agent loop (PR #37), #11 #13 (PR #30), #12 (PR #35), prototype mới (PR #29). Backend 68 test pass.
+- Đã đóng: #1 #6 #7 #8 #9 #11 #12 #13.
+- Backend còn: #10 `/scan`, #14 JWT, #32 volume compose, #2, #4 + #15 (cần Chính chạy `tcinit.sh` bằng email của mình), demo/README #25–#28.
+- Frontend (arokepg): #3 #5 #16–#23 chưa có PR.
+- 15:02 agent tự chạy lại: spawn #10 và #14 + #32, review PR web/* nếu có, nhắn Telegram.
+
 ## 2. Phân công
 
 Đổi phân công lúc 12:00: **arokepg làm frontend, Chính làm backend.**
@@ -86,5 +93,6 @@ Workflow `.github/workflows/claude.yml` dùng **subscription Claude** (không c�
 - Cài Claude GitHub App cho repo `ndchinh2706/cosign`: https://github.com/apps/claude
 - Tạo token từ subscription: mở terminal, chạy `claude setup-token`, đăng nhập, copy token.
 - Lưu thành secret: `gh secret set CLAUDE_CODE_OAUTH_TOKEN -R ndchinh2706/cosign` rồi dán token khi được hỏi.
-- Kiểm tra: comment `@claude đọc issue này và tóm tắt việc cần làm` trên một issue, xem tab Actions.
+- Đã bật và chạy thử thành công lúc 12:15 (issue #10, Action chạy 23 giây). Secret `CLAUDE_CODE_OAUTH_TOKEN` đã set.
+- Kiểm tra lại: comment `@claude đọc issue này và tóm tắt việc cần làm` trên một issue, xem tab Actions.
 - Lưu ý: mỗi lần agent chạy sẽ trừ vào hạn mức subscription. Khi repo chuyển public lúc 17:30, chỉ collaborator mới kích hoạt được.
