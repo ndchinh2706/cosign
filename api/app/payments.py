@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 from fastapi import Request
 
+from . import scanner
 from .audit_log import append_audit
 from .auth import SEED_USERS
 from .errors import ApiError
@@ -51,8 +52,7 @@ SEED_LOGS = [
 
 
 def scan_text(text: str) -> dict:
-    # TODO #10: call the real scan (SCAN_MODE heuristic/model) once it exists; fixed result for the demo line.
-    return {"label": "PROMPT_INJECTION", "score": 0.97, "lang": "fr", "model": "heuristic-v1"}
+    return scanner.scan_text(text)
 
 
 def get_db(request: Request) -> sqlite3.Connection:
