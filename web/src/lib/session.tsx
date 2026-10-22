@@ -22,8 +22,10 @@ const SessionCtx = createContext<Session | null>(null)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const demoUser = useSyncExternalStore(subscribeDemoUser, getDemoUser, () => '')
-  const { data: me, loading, mutate } = useApi<Me>(demoUser ? `/me?as=${demoUser}` : null) // ?as= only re-keys the fetch on switch
-  const { refreshToken } = useTide()
+  const { refreshToken, mode, authenticated } = useTide()
+  // Live Tide: no /me until the SDK holds a token, else it 401s and never refetches.
+  const signedIn = mode !== 'live' || authenticated
+  const { data: me, loading, mutate } = useApi<Me>(demoUser && signedIn ? `/me?as=${demoUser}` : null) // ?as= only re-keys the fetch on switch
   const { on } = useCosignSocket(me ? [`user:${me.user.username}`] : [])
   const opened = useRef(0)
   useEffect(() => {

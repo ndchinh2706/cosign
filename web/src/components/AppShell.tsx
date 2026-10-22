@@ -34,6 +34,17 @@ function useTheme() {
   }
 }
 
+// Live Tide: wait for the SDK, then send signed-out users to /login before any API call fires.
+export function AuthGate({ children }: { children: ReactNode }) {
+  const { mode, ready, authenticated } = useTide()
+  const router = useRouter()
+  const blocked = mode === 'live' && !(ready && authenticated)
+  useEffect(() => {
+    if (mode === 'live' && ready && !authenticated) router.replace('/login')
+  }, [mode, ready, authenticated, router])
+  return blocked ? null : <>{children}</>
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { me, demoUser } = useSession()
   const { hasRealmRole, logout } = useTide()
