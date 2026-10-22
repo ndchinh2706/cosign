@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { apiPost } from '@/lib/api'
 import { API_MODE } from '@/lib/config'
 import { approvalState, type ChangeRequest } from '@/lib/requests'
@@ -39,7 +39,7 @@ export function useSign(cr: ChangeRequest | undefined, onDone: (next: ChangeRequ
   return { nodes, sign, reset: () => setNodes(null) }
 }
 
-export function RequestReview({ cr, onChange, security }: { cr: ChangeRequest; onChange: (cr: ChangeRequest) => void; security?: boolean }) {
+export function RequestReview({ cr, onChange, security, children }: { cr: ChangeRequest; onChange: (cr: ChangeRequest) => void; security?: boolean; children?: ReactNode }) {
   const { me } = useSession()
   const [modal, setModal] = useState(false)
   const blocked = me ? approvalState(cr, me.user.username, me.roles, me.user.type) : 'Loading…'
@@ -55,8 +55,8 @@ export function RequestReview({ cr, onChange, security }: { cr: ChangeRequest; o
       toast({ kind: 'refused', title: 'Deny failed.', body: (e as Error).message })
     }
   }
-  const approveBtn = <button className={flagged ? 'btn' : 'btn btn-primary'} style={{ flex: 1, height: 44, fontSize: 14 }} disabled={!!blocked} onClick={() => setModal(true)}>Approve &amp; sign{flagged ? ` · requires ${cr.quorum.required} of ${cr.quorum.required}` : ''}</button>
-  const denyBtn = <button className="btn" style={{ height: 44, padding: '0 18px', fontSize: 14, color: flagged ? 'var(--on-fill)' : 'var(--refused)', background: flagged ? 'var(--refused)' : undefined, borderColor: 'var(--refused)', flex: flagged ? 1 : undefined }} disabled={!!blocked} onClick={() => deny()}>Deny</button>
+  const approveBtn = <button className={flagged ? 'btn' : 'btn btn-primary'} style={{ flex: flagged ? 'none' : 1, height: 44, fontSize: 14 }} disabled={!!blocked} onClick={() => setModal(true)}>Approve &amp; sign{flagged ? ` · requires ${cr.quorum.required} of ${cr.quorum.required}` : ''}</button>
+  const denyBtn = <button className="btn" style={{ height: 44, padding: '0 18px', fontSize: 14, color: flagged ? 'var(--on-fill)' : 'var(--refused)', background: flagged ? 'var(--refused)' : undefined, borderColor: 'var(--refused)', flex: 'none' }} disabled={!!blocked} onClick={() => deny()}>Deny</button>
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.35fr) minmax(340px,1fr)', gap: 20, alignItems: 'start' }}>
@@ -98,6 +98,7 @@ export function RequestReview({ cr, onChange, security }: { cr: ChangeRequest; o
             </div>
           </section>
         )}
+        {children}
       </div>
 
       <aside className="card" style={{ position: 'sticky', top: 'calc(var(--topbar-h) + 16px)', padding: 22, display: 'flex', flexDirection: 'column', gap: 18 }}>
