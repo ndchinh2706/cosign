@@ -90,7 +90,9 @@ export default function AgentConsole() {
 
   const run = st.run
   const crId = String(st.run?.steps.find((s) => s.tool_name === 'request_access')?.output?.request_id ?? 'CR-0192')
-  const cr = st.requests[crId]
+  // WS events win; REST covers a page opened after the quorum already signed.
+  const { data: crSnap } = useApi<ConsoleState['requests'][string]>(API_MODE === 'live' && st.run ? `/requests/${crId}` : null)
+  const cr = st.requests[crId] ?? crSnap
   const seal = (cr?.quorum?.signed_by ?? []).map((s) => ({ username: s.username }))
   const granted = st.authority.find((a) => a.capability === 'customer_pii.selfdecrypt')?.state === 'granted'
   const statusPill = run?.status === 'completed' ? { t: 'Completed', c: 'var(--ok)' } : run?.status === 'waiting_approval' ? { t: 'Waiting for approval', c: 'var(--pending)' } : { t: 'Atlas is working', c: 'var(--agent)' }
@@ -143,7 +145,7 @@ export default function AgentConsole() {
             {metrics && <ErrorChart m={metrics} />}
           </div>
         </div>
-        <div ref={stream} style={{ flex: 1, overflow: 'auto', padding: '20px 24px 120px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div ref={stream} className="stream" style={{ flex: 1, overflow: 'auto', padding: '20px 24px 120px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {!run?.steps.length && <p className="muted">The run has not started. Press Play to replay the storyboard.</p>}
           {run?.steps.map((s) => (
             <StreamItem key={s.id} s={s} open={!!open[s.id]} toggle={() => setOpen((o) => ({ ...o, [s.id]: !o[s.id] }))} injection={st.injection?.line} cr={cr} seal={seal} plain={granted ? plain : null} />

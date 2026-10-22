@@ -294,3 +294,8 @@ input:focus-visible {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* Scrolling flex columns: cards keep their height instead of shrinking to fit. */
+.stream > * {
+  flex-shrink: 0;
+}
