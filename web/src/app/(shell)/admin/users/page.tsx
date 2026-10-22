@@ -40,7 +40,7 @@ export default function UsersAndRoles() {
               <td style={{ padding: '12px 18px' }}>
                 <span style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {u.roles.map((r) => <code key={r} style={{ fontSize: 12, padding: '2px 8px', borderRadius: 4, background: 'var(--surface-2)' }}>{r}</code>)}
-                  {u.pending_requests.length > 0 && <span className="pill" style={{ ['--c' as string]: 'var(--pending)' }}>Pending · {u.pending_requests.join(', ')}</span>}
+                  {u.pending_requests.length > 0 && <span className="pill" title={u.pending_requests.join(', ')} style={{ ['--c' as string]: 'var(--pending)' }}>{u.pending_requests.length} pending</span>}
                 </span>
               </td>
               <td className="muted" style={{ padding: '12px 18px', whiteSpace: 'nowrap' }}>{u.last_login.slice(0, 16).replace('T', ' ')}</td>

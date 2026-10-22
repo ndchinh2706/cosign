@@ -157,7 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {API_MODE === 'mock' && <ReplayControls />}
       {drawer && feed && <NotificationsDrawer feed={feed} roles={me?.roles ?? []} onClose={() => setDrawer(false)} />}
 
-      <div style={{ position: 'fixed', top: 68, right: 16, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 8, width: 316 }} aria-live="polite">
+      <div style={{ position: 'fixed', bottom: 72, right: 16, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 8, width: 316 }} aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className="card" onClick={() => setToasts((ts) => ts.filter((x) => x.id !== t.id))} style={{ display: 'flex', gap: 10, padding: '12px 14px', boxShadow: 'var(--shadow)', animation: 'cs-in 220ms ease', cursor: 'pointer' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: TOAST_C[t.kind] ?? 'var(--accent)', marginTop: 5, flex: 'none' }} />
