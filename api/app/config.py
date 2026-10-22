@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     anthropic_model: str = "claude-sonnet-5-5"
 
     db_path: str = "cosign.db"
+    seed_sample_records: bool = True
     mocks_dir: Path = REPO_ROOT / "docs" / "mocks"
     cors_origins: list[str] = ["http://localhost:3000"]
     ws_auth_timeout_s: float = 5.0

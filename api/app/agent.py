@@ -372,6 +372,8 @@ class AgentService:
             step.update(status="error", error={"code": "console_offline", "message": "agent console offline"})
             await self._emit(ctx, step)
             return {"error": {"code": "console_offline", "message": "agent console offline"}}
+        if res.get("ok") and len((res.get("output") or {}).get("records") or []) < len(ids):
+            res = {"ok": False, "error": {"code": "decrypt_error", "raw": "fewer records returned than requested"}}
         if res.get("ok"):
             records = (res.get("output") or {}).get("records") or []
             ctx.plaintext.append(records)

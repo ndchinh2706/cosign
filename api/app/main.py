@@ -37,7 +37,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.payments_db = app.state.db
         if hasattr(app.state.governance, "bind_db"):
             app.state.governance.bind_db(app.state.db)
-        seeding.seed(app.state.db, settings.mocks_dir, app.state.governance)
+        seeding.seed(app.state.db, settings.mocks_dir, app.state.governance, settings.seed_sample_records)
         seeding.rehydrate(app.state.db, app.state.governance)
         app.state.access = AccessService(app)
         app.state.agents = AgentService(app)

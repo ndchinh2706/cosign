@@ -51,6 +51,7 @@ export default function AgentConsole() {
       const reply = (extra: Record<string, unknown>) => send('tool_result', { run_id: p.run_id, step_id: p.step_id, call_id: p.call_id, tool: p.tool, ...extra })
       try {
         const { items } = await apiGet<{ items: { id: string; tag: string; ciphertext: string }[] }>(`/records?ids=${p.input.ids.join(',')}`)
+        if (items.length < p.input.ids.length) throw new Error('decrypt_error: records missing for requested ids')
         const out = await doDecrypt(items.map((r) => ({ encrypted: r.ciphertext, tags: [r.tag] })))
         const records = out.map((s) => JSON.parse(s) as PlainRecord)
         const fields = ['name', 'settlement_bank', 'payout_currency', 'last_tx']
@@ -225,7 +226,7 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
       </div>
     )
   if (s.tool_name === 'request_access') {
-    const inp = s.input as { capability: string; scope: { record_ids: string[] }; duration_min: number; justification: string }
+    const inp = s.input as { capability: string; scope?: { record_ids?: string[]; deploy?: string }; duration_min?: number; justification: string }
     return (
       <div className="card" data-screen="A3" style={{ maxWidth: 820, borderColor: 'var(--control)', overflow: 'hidden' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -237,8 +238,8 @@ function StreamItem({ s, open, toggle, injection, cr, seal, plain }: { s: Step; 
         <dl style={{ display: 'grid', gridTemplateColumns: '120px minmax(0,1fr)', rowGap: 12, columnGap: 16, padding: '16px 18px', margin: 0 }}>
           <dt className="muted">Capability</dt><dd style={{ margin: 0 }}><code>_tide_{inp.capability}</code></dd>
           <dt className="muted">Scope</dt>
-          <dd style={{ margin: 0, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>{inp.scope.record_ids.length} records {inp.scope.record_ids.map((id) => <code key={id} style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)' }}>{id}</code>)}</dd>
-          <dt className="muted">Duration</dt><dd style={{ margin: 0 }}>{inp.duration_min} minutes</dd>
+          <dd style={{ margin: 0, display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>{inp.scope?.record_ids ? `${inp.scope.record_ids.length} records` : inp.scope?.deploy ? `deploy ${inp.scope.deploy}` : 'unscoped'} {(inp.scope?.record_ids ?? []).map((id) => <code key={id} style={{ fontSize: 12, padding: '2px 7px', borderRadius: 4, background: 'var(--surface-2)' }}>{id}</code>)}</dd>
+          <dt className="muted">Duration</dt><dd style={{ margin: 0 }}>{inp.duration_min ? `${inp.duration_min} minutes` : 'Single use'}</dd>
           <dt className="muted">Justification</dt><dd style={{ margin: 0, lineHeight: 1.55 }}>&ldquo;{inp.justification}&rdquo;</dd>
           <dt className="muted">Risk tier</dt><dd style={{ margin: 0 }}><RiskChip tier={s.tier ?? 'T2'} /></dd>
         </dl>
