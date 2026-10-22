@@ -16,7 +16,8 @@ export const SCREENS: Record<string, Screen> = {
   L4: { code: 'L4', name: 'Agent registry', route: '/governance/agents', roles: ['security-lead'], proto: 'Cosign Security.dc.html' },
   L4D: { code: 'L4', name: 'Agent detail', route: '/governance/agents/[username]', roles: ['security-lead'], proto: 'Cosign Security.dc.html' },
   R1: { code: 'R1 (+R2)', name: 'Users & Roles', route: '/admin/users', roles: ['platform-admin'], proto: 'Cosign Admin.dc.html' },
-  R3: { code: 'R3', name: 'Data browser', route: '/admin/data', roles: ['platform-admin'], proto: 'Cosign Admin.dc.html' },
+  R3: { code: 'R3', name: 'Data browser', route: '/admin/data', roles: ['platform-admin', 'security-lead'], // security-lead opens it to show the compare view decrypting
+    proto: 'Cosign Admin.dc.html' },
   SEED: { code: 'Seed', name: 'Seed encrypted records', route: '/admin/data/seed', roles: ['security-lead', 'platform-admin'], proto: '(none — docs/SCREENS.md "Seed page")' },
   R4: { code: 'R4', name: 'Audit log (attempt to tamper)', route: '/admin/audit', roles: ['platform-admin'], proto: 'Cosign Admin.dc.html' },
   C1: { code: 'C1', name: 'Audit trail', route: '/audit', roles: ['compliance', 'security-lead', 'platform-admin', 'oncall'], proto: 'Cosign Compliance.dc.html' },

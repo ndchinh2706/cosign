@@ -16,6 +16,9 @@ import { API_MODE } from '@/lib/config'
 type Incident = { id: string; service: string; status: string; started_at: string; resolved_at: string | null }
 type Toast = { id: string; kind: string; title: string; body?: string }
 
+// Pages raise a toast without prop drilling: toast({ kind, title, body }).
+export const toast = (t: Omit<Toast, 'id'>) => window.dispatchEvent(new CustomEvent('cosign:toast', { detail: t }))
+
 const hhmm = (iso?: string | null) => (iso ? iso.slice(11, 16) : '')
 const TOAST_C: Record<string, string> = { ok: 'var(--ok)', refused: 'var(--refused)', warn: 'var(--pending)', pending: 'var(--pending)' }
 
@@ -75,7 +78,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== t.id)), 4800)
       }),
     ]
-    return () => offs.forEach((off) => off())
+    const local = (e: Event) => {
+      const t = { id: Math.random().toString(36).slice(2), ...(e as CustomEvent<Omit<Toast, 'id'>>).detail }
+      setToasts((ts) => [...ts, t].slice(-3))
+      setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== t.id)), 4800)
+    }
+    window.addEventListener('cosign:toast', local)
+    return () => {
+      offs.forEach((off) => off())
+      window.removeEventListener('cosign:toast', local)
+    }
   }, [on, demoUser, setIncident, setFeed])
 
   const approvals = feed?.groups.find((g) => g.id === 'approval')?.items.length ?? 0
