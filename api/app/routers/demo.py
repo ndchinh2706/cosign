@@ -4,8 +4,8 @@ from .. import payments
 from ..auth import User, current_user
 from ..config import Settings, get_settings
 from ..errors import ApiError
-from ..governance import make_governance
-from ..mocks import Mock, mount_mocks
+from .. import seed as seeding
+from ..governance import seed_roles
 
 
 def demo_gate(user: User = Depends(current_user), settings: Settings = Depends(get_settings)) -> None:
@@ -21,7 +21,7 @@ async def reset(request: Request, payload: dict | None = Body(default=None), db=
     wipe = bool((payload or {}).get("wipe_records", False))
     payments.reset(db, wipe_records=wipe)
     app = request.app
-    app.state.governance = make_governance(app.state.settings)
+    seeding.reset(db, app.state.settings.mocks_dir, app.state.governance, seed_roles())
     app.state.clock_offset_min = 0
     row = payments.list_incidents(db)["items"][0]
     await app.state.hub.publish(f"incident:{payments.INCIDENT_ID}", "incident.updated",
@@ -44,7 +44,7 @@ def clock(request: Request, payload: dict = Body(...)):
     return {"ok": True, "offset_min": offset}
 
 
-# TODO #8/#7: /demo/requests/{id}/expire belongs with the requests lifecycle.
-mount_mocks(router, [
-    Mock("POST", "/demo/requests/{id}/expire", body={"ok": True}),
-])
+@router.post("/demo/requests/{id}/expire")
+async def demo_expire(id: str, request: Request):
+    await request.app.state.access.expire(id)
+    return {"ok": True}

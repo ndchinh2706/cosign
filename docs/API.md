@@ -102,13 +102,15 @@ access_requests  (id TEXT PK "CR-0192", type RequestType, run_id FK NULL, incide
                   base_tier, tier, escalated INTEGER, escalation_reason,
                   required INTEGER, eligible_json, status RequestStatus, flags_json,
                   tide_cr_id TEXT NULL, signature TEXT NULL,
-                  created_at, decided_at NULL, granted_at NULL, expires_at NULL)
+                  created_at, decided_at NULL, granted_at NULL, expires_at NULL,
+                  safety_checks_json, security_context_json NULL, decision_json NULL)   -- decision_json: denied_by/deny_reason/quarantined/flag_note
 approvals        (id TEXT PK, request_id FK, approver, decision Decision, duration_override_min NULL, signature, ork_nodes "14/20", signed_at)
 injection_events (id TEXT PK, run_id FK, source, text, label ScanLabel, score REAL, lang, ts, quarantined INTEGER)
 audit_events     (id TEXT PK, ts, actor, actor_type ActorType, action, target, outcome Outcome,
                   incident_id NULL, request_id NULL, payload_json, signers_json, signature, prev_hash, hash)
 policy_versions  (version TEXT PK "v7", body_json, signed_by_json, hash, created_at)
-notifications    (id TEXT PK, user, group_name "approval|agent|security", title, body, request_id NULL, read INTEGER, ts)
+notifications    (id TEXT PK, user, group_name "approval|agent|security", title, body, request_id NULL, read INTEGER, ts, meta_json)
+role_grants      (username, role, request_id, granted_at, expires_at NULL, PK(username, role))   -- vai trò áp dụng qua quorum (MockTideGovernance)
 ```
 
 ### 2.3 Policy mặc định (`policy_versions.v7.body_json`)

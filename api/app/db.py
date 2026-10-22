@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS access_requests (
   target_user TEXT, capability TEXT, roles_json TEXT, scope_json TEXT, duration_min INTEGER,
   justification TEXT, evidence_json TEXT, base_tier TEXT, tier TEXT, escalated INTEGER DEFAULT 0,
   escalation_reason TEXT, required INTEGER, eligible_json TEXT, status TEXT, flags_json TEXT,
-  tide_cr_id TEXT, signature TEXT, created_at TEXT, decided_at TEXT, granted_at TEXT, expires_at TEXT
+  tide_cr_id TEXT, signature TEXT, created_at TEXT, decided_at TEXT, granted_at TEXT, expires_at TEXT,
+  safety_checks_json TEXT, security_context_json TEXT, decision_json TEXT
 );
 CREATE TABLE IF NOT EXISTS approvals (
   id TEXT PRIMARY KEY, request_id TEXT REFERENCES access_requests(id), approver TEXT,
@@ -53,7 +54,11 @@ CREATE TABLE IF NOT EXISTS policy_versions (
 );
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY, user TEXT, group_name TEXT, title TEXT, body TEXT, request_id TEXT,
-  read INTEGER DEFAULT 0, ts TEXT
+  read INTEGER DEFAULT 0, ts TEXT, meta_json TEXT
+);
+CREATE TABLE IF NOT EXISTS role_grants (
+  username TEXT, role TEXT, request_id TEXT, granted_at TEXT, expires_at TEXT,
+  PRIMARY KEY (username, role)
 );
 """
 

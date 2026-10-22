@@ -1,19 +1,19 @@
 """In-memory WS hub. Protocol: docs/API.md §6."""
 import asyncio
 import uuid
-from datetime import datetime, timedelta, timezone
+from collections.abc import Iterable
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from .auth import User, user_from_credential
+from .clock import TZ, iso, now  # noqa: F401  (TZ re-exported)
 from .errors import ApiError
 
-TZ = timezone(timedelta(hours=7))
 router = APIRouter()
 
 
 def envelope(type_: str, payload: dict, channel: str | None = None) -> dict:
-    return {"v": 1, "id": f"evt_{uuid.uuid4().hex[:12]}", "ts": datetime.now(TZ).isoformat(timespec="seconds"),
+    return {"v": 1, "id": f"evt_{uuid.uuid4().hex[:12]}", "ts": iso(now()),
             "type": type_, "channel": channel, "payload": payload}
 
 
@@ -21,6 +21,12 @@ class Connection:
     def __init__(self, ws: WebSocket, user: User):
         self.ws, self.user = ws, user
         self.channels: set[str] = {f"user:{user.username}", "global", *(f"role:{r}" for r in user.roles)}
+
+    def may_subscribe(self, channel: str) -> bool:
+        kind, _, name = channel.partition(":")
+        if kind in ("incident", "run"):
+            return bool(name)
+        return channel in self.channels
 
     async def send(self, msg: dict) -> None:
         await self.ws.send_json(msg)
@@ -31,11 +37,15 @@ class Hub:
         self.conns: set[Connection] = set()
         self.pending_tool_calls: dict[str, asyncio.Future] = {}
 
-    async def publish(self, channel: str, type_: str, payload: dict) -> None:
-        msg = envelope(type_, payload, channel)
-        for c in [c for c in self.conns if channel in c.channels]:
+    async def publish(self, channels: str | Iterable[str], type_: str, payload: dict) -> None:
+        """Send once per connection, tagged with the first matching channel."""
+        wanted = [channels] if isinstance(channels, str) else list(dict.fromkeys(channels))
+        for c in list(self.conns):
+            match = next((ch for ch in wanted if ch in c.channels), None)
+            if match is None:
+                continue
             try:
-                await c.send(msg)
+                await c.send(envelope(type_, payload, match))
             except Exception:
                 self.conns.discard(c)
 
@@ -80,9 +90,16 @@ async def ws_endpoint(ws: WebSocket):
             if t == "ping":
                 await conn.send(envelope("pong", {}))
             elif t == "subscribe":
-                conn.channels.update(c for c in p.get("channels", []) if isinstance(c, str))
-                if p.get("console") and user.type == "agent":
-                    conn.channels.add(f"agent-console:{user.username}")
+                for ch in p.get("channels", []):
+                    if not isinstance(ch, str) or not conn.may_subscribe(ch):
+                        await conn.send(envelope("error", {"code": "forbidden", "message": f"cannot subscribe to {ch!r}"}))
+                    else:
+                        conn.channels.add(ch)
+                if p.get("console"):
+                    if user.type == "agent":
+                        conn.channels.add(f"agent-console:{user.username}")
+                    else:
+                        await conn.send(envelope("error", {"code": "forbidden", "message": "console is for agents"}))
             elif t == "unsubscribe":
                 conn.channels.difference_update(p.get("channels", []))
             elif t == "tool_result":
