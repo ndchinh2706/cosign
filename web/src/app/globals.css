@@ -1,0 +1,75 @@
+/* Design tokens: docs/planning/COSIGN-SCREENS.md §1. Dark is default. */
+:root,
+[data-theme='dark'] {
+  --bg: #0b0d12;
+  --surface: #12151c;
+  --surface-2: #191d26;
+  --border: #252a35;
+  --text: #e6e8ee;
+  --text-muted: #8a92a3;
+  --accent: #7c9cff;
+  --ok: #3dd68c;
+  --pending: #f5b83d;
+  --refused: #ff5c6c;
+  --agent: #b48cff;
+
+  --tier-t0: #8a92a3;
+  --tier-t1: var(--accent);
+  --tier-t2: var(--pending);
+  --tier-t3: var(--refused);
+
+  --radius: 8px;
+  --sidebar-w: 220px;
+  --topbar-h: 56px;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, 'SFMono-Regular', monospace;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f5;
+  --border: #dde1e8;
+  --text: #12151c;
+  --text-muted: #5b6474;
+  --accent: #4f6fe0;
+  --ok: #1fa565;
+  --pending: #c98a0f;
+  --refused: #d93648;
+  --agent: #8a5ce0;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}

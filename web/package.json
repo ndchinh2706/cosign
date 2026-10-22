@@ -1,0 +1,33 @@
+{
+  "name": "cosign-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync-mocks": "node scripts/sync-mocks.mjs",
+    "predev": "npm run sync-mocks",
+    "dev": "next dev -p 3000",
+    "prebuild": "npm run sync-mocks",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "init": "bash init/tcinit.sh"
+  },
+  "dependencies": {
+    "@tidecloak/nextjs": "^0.13.11",
+    "next": "16.x",
+    "react": "19.x",
+    "react-dom": "19.x"
+  },
+  "overrides": {
+    "postcss": "^8.5.25",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.0.13",
+    "@types/react": "19.1.8",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.2",
+    "typescript": "5.8.3"
+  }
+}
