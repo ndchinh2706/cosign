@@ -8,6 +8,7 @@ from . import payments
 from . import seed as seeding
 from . import ws
 from .access import AccessService
+from .agent import AgentService
 from .config import Settings, get_settings
 from .db import init_db
 from .errors import install_error_handlers
@@ -39,8 +40,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         seeding.seed(app.state.db, settings.mocks_dir, app.state.governance)
         seeding.rehydrate(app.state.db, app.state.governance)
         app.state.access = AccessService(app)
+        app.state.agents = AgentService(app)
         sweeper = asyncio.create_task(_expiry_sweeper(app, settings.expiry_sweep_s))
         yield
+        await app.state.agents.shutdown()
         sweeper.cancel()
         with suppress(asyncio.CancelledError):
             await sweeper

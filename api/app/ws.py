@@ -36,10 +36,13 @@ class Hub:
     def __init__(self) -> None:
         self.conns: set[Connection] = set()
         self.pending_tool_calls: dict[str, asyncio.Future] = {}
+        self.listeners: list = []
 
     async def publish(self, channels: str | Iterable[str], type_: str, payload: dict) -> None:
         """Send once per connection, tagged with the first matching channel."""
         wanted = [channels] if isinstance(channels, str) else list(dict.fromkeys(channels))
+        for fn in self.listeners:
+            fn(type_, payload)
         for c in list(self.conns):
             match = next((ch for ch in wanted if ch in c.channels), None)
             if match is None:
@@ -103,7 +106,10 @@ async def ws_endpoint(ws: WebSocket):
             elif t == "unsubscribe":
                 conn.channels.difference_update(p.get("channels", []))
             elif t == "tool_result":
-                hub.resolve_tool_result(p)
+                if user.type == "agent":
+                    hub.resolve_tool_result(p)
+                else:
+                    await conn.send(envelope("error", {"code": "forbidden", "message": "tool_result is for agents"}))
             else:
                 await conn.send(envelope("error", {"code": "validation_error", "message": f"unknown type {t!r}"}))
     except (WebSocketDisconnect, ValueError):
