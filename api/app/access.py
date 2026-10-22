@@ -149,16 +149,19 @@ class AccessService:
             channels.append(f"incident:{r['incident_id']}")
         await self.hub.publish(channels, type_, payload if payload is not None else self.view(r))
 
-    async def _audit(self, **kw) -> None:
+    async def _audit(self, **kw) -> dict:
         ev = append_audit(self.db, **kw)
         await self.hub.publish("global", "audit.appended", ev)
+        return ev
 
-    def authority(self, username: str) -> list[dict]:
+    def authority(self, username: str, caps: list[str] | None = None) -> list[dict]:
         pol = self.policy()
         roles = self.gov.user_roles(username)
         is_agent = user_type(username) == "agent"
+        grants = {r["role"] for r in self.db.execute(
+            "SELECT role FROM role_grants WHERE username = ?", (username,))}
         out = []
-        for cap in AUTHORITY_CAPS:
+        for cap in caps or AUTHORITY_CAPS:
             tide_roles = CAPABILITY_ROLES.get(cap, [])
             if pol.body["capability_tier"].get(cap) == "T0":
                 out.append({"capability": cap, "state": "allowed"})
@@ -176,7 +179,9 @@ class AccessService:
             pending = self.db.execute(
                 "SELECT id FROM access_requests WHERE target_user = ? AND capability = ? AND status = 'pending'"
                 " LIMIT 1", (username, cap)).fetchone()
-            if held:
+            if held and not all(r in grants for r in tide_roles):
+                entry["state"] = "allowed"
+            elif held:
                 entry["state"] = "granted"
                 if active:
                     entry.update(expires_at=active["expires_at"], request_id=active["id"])
@@ -310,7 +315,7 @@ class AccessService:
                            {"max_duration_min": min(limits)})
 
         flags = list(dec.flags)
-        if target == user.username and user.type != "agent":
+        if target == user.username and user.type != "agent" and body.type == "grant_role":
             flags.append("self_grant")
         if user_type(target) == "agent" and user.type != "agent" and body.capability == "roles.grant":
             flags.append("agent_target")

@@ -108,7 +108,7 @@ approvals        (id TEXT PK, request_id FK, approver, decision Decision, durati
 injection_events (id TEXT PK, run_id FK, source, text, label ScanLabel, score REAL, lang, ts, quarantined INTEGER)
 audit_events     (id TEXT PK, ts, actor, actor_type ActorType, action, target, outcome Outcome,
                   incident_id NULL, request_id NULL, payload_json, signers_json, signature, prev_hash, hash)
-policy_versions  (version TEXT PK "v7", body_json, signed_by_json, hash, created_at)
+policy_versions  (version TEXT PK "v7", body_json, signed_by_json, hash, created_at, signature, change)   -- v5/v6 là lịch sử, body_json NULL
 notifications    (id TEXT PK, user, group_name "approval|agent|security", title, body, request_id NULL, read INTEGER, ts, meta_json)
 role_grants      (username, role, request_id, granted_at, expires_at NULL, PK(username, role))   -- vai trò áp dụng qua quorum (MockTideGovernance)
 ```
@@ -626,7 +626,7 @@ Ghi chú: mọi ô `roles.grant`/`policy.edit`/`audit.write` đều `locked` vì
 |---|---|---|---|---|
 | GET | `/audit?actor_type=&incident=&capability=&outcome=&from=&to=&limit=&cursor=` | `compliance`, `security`, `admin`, `oncall` | C1 | `audit.json` |
 | GET | `/audit/{id}` | như trên | JSON chi tiết + signature | `audit-event.json` |
-| POST | `/audit/{id}/verify` | như trên | `{verified, hash, prev_hash, signers, ork_nodes}` | `audit-verify.json` |
+| POST | `/audit/{id}/verify` | như trên | `{verified, hash, prev_hash, signers, ork_nodes}`; tính lại hash từ nội dung + kiểm `prev_hash` với event liền trước; sai thì `verified:false` kèm `reason` | `audit-verify.json` |
 
 Audit event:
 
@@ -641,6 +641,8 @@ Audit event:
   "prev_hash": "sha256:1f9e…", "hash": "sha256:7ab3…", "verified": true
 }
 ```
+
+Mỗi item của `/audit` có `verified` tính từ hash chain thật (event bị sửa hash/nội dung → `false`, event kế tiếp cũng `false` vì `prev_hash` lệch). `GET /me`: `state:"allowed"` = quyền từ role gốc, `granted` (kèm `expires_at`) = role cấp qua quorum còn hạn. `DELETE /admin/audit/{id}` tạo request `audit_delete` T3 (capability `audit.write`) và ghi audit `admin.audit.delete`; id không tồn tại → `404`.
 
 Chuỗi sự kiện INC-2417 mock (theo C1): `deploy.rollback allowed` → `decrypt_records refused` → `request.created CR-0192 pending` → `injection.detected` → `grant_role blocked CR-0193` → `admin.roles.put blocked CR-0195` → `admin.audit.delete blocked` → `request.approved CR-0192 signed` → `data.accessed allowed (5 records)` → `access.expired`.
 
