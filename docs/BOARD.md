@@ -21,19 +21,23 @@ Link sẽ có dạng `https://github.com/users/ndchinh2706/projects/<number>`. K
 
 ## 2. Phân công
 
+Đổi phân công lúc 12:00: **arokepg làm frontend, Chính làm backend.**
+
 | Người | GitHub | Mảng | Issues |
 |---|---|---|---|
-| Chính | `ndchinh2706` | Next.js, port màn từ Claude Design, TideCloak (realm, seed, SDK), tool `decrypt_records` ở tab Agent Console, video, nộp bài | #1 #3 #4 #5 #16 #17 #18 #19 #20 #21 #22 #23 #25 #26 #28, chung #15 #24 |
-| arokepg | `arokepg` | FastAPI, WS hub, agent loop, policy/requests, ciphertext store, audit, `/scan`, mock payments-api, docker-compose, README | #2 #6 #7 #8 #9 #10 #11 #12 #13 #14 #27, chung #15 #24 |
+| arokepg | `arokepg` | Next.js, port màn từ `design/prototype/`, tích hợp SDK TideCloak trên trình duyệt (`doEncrypt`/`doDecrypt`, tool `decrypt_records` ở tab Agent Console), trang seed dữ liệu | #3 #5 #16 #17 #18 #19 #20 #21 #22 #23, chung #24 |
+| Chính | `ndchinh2706` | FastAPI, WS hub, agent loop, policy/requests, ciphertext store, audit, `/scan`, mock payments-api, docker-compose, realm TideCloak + spike quorum, README, video, nộp bài | #1 #2 #4 #6–#15 #25 #26 #27 #28, chung #24 |
 
 ## 3. Quy ước
 
-- Nhánh: `web/<issue>-<slug>` cho Chính, `api/<issue>-<slug>` cho arokepg, `tide/...` và `docs/...` cho việc chung. Ví dụ `api/8-requests-policy`.
+- Nhánh: ghi sẵn trong mục Context của từng issue (`web/...` cho arokepg, `api/...` `tide/...` `demo/...` `docs/...` cho Chính), `tide/...` và `docs/...` cho việc chung. Ví dụ `api/8-requests-policy`.
 - PR nhỏ, một issue một PR, tiêu đề `#8 Requests + policy engine`. Body ghi `Closes #8`.
-- Review chéo: Chính review PR `api/*`, arokepg review PR `web/*`. Review ≤ 10 phút, chỉ chặn khi sai contract hoặc hỏng build. Tự merge nếu reviewer bận quá 20 phút và PR không đụng contract.
+- Review chéo: Chính review PR `web/*`, arokepg review PR `api/*`. Review ≤ 10 phút, chỉ chặn khi sai contract hoặc hỏng build. Tự merge nếu reviewer bận quá 20 phút và PR không đụng contract.
 - Contract là `docs/API.md` + `docs/openapi.yaml` + `docs/mocks/`. Đổi contract phải sửa cả 3 trong cùng PR và nhắn người kia.
 - Frontend code trên mock trước (`NEXT_PUBLIC_API_MODE=mock`), backend trả đúng shape mock. Hai bên không chặn nhau cho tới #23.
-- Cập nhật trạng thái: nhận việc thì tự assign + comment "đang làm"; xong thì PR `Closes #n`; kẹt thì comment "BLOCKED: ..." và nhắn ngay.
+- Trạng thái = label: `status:todo` → `status:in-progress` → `status:review` (PR mở) → đóng khi merge; kẹt thì `status:blocked` + comment `BLOCKED: ...` và tag người kia. Xem nhanh: `gh issue list -l status:in-progress`.
+- Mỗi issue có mục **Context** (file cần đọc, owner, reviewer, branch), **Sync-up** và **Giao cho agent**.
+- Giao việc cho agent: comment `@claude <yêu cầu>` trên issue/PR. GitHub Action `.github/workflows/claude.yml` chạy Claude Code: đọc issue + `CLAUDE.md`, làm trên branch, mở PR. Cần cài một lần (xem §8).
 - Commit thẳng `main` chỉ cho docs nhỏ và fix hotfix lúc < 16:30.
 - Secrets: `ANTHROPIC_API_KEY` chỉ trong `.env` local, `.env` trong `.gitignore`, repo sẽ public lúc 17:30.
 
@@ -45,7 +49,7 @@ Link sẽ có dạng `https://github.com/users/ndchinh2706/projects/<number>`. K
 
 ## 5. Lịch theo giờ
 
-| Giờ | Chính | arokepg |
+| Giờ | Frontend (arokepg) | Backend (Chính) |
 |---|---|---|
 | 11:30–12:30 | #1 spike quorum (song song #3 scaffold) | #2 compose, #6 skeleton + endpoints đọc |
 | 12:30 | Sync 1: chốt governance mode, tên role Tide, alg JWT | |
@@ -78,3 +82,12 @@ Việc có thể bỏ nếu thiếu giờ, theo thứ tự bỏ trước: #22 C1
 - LLM lạc kịch bản khi quay: dùng `AGENT_MODE=scripted`.
 - Video > 100MB: `ffmpeg -crf 28`.
 - Cập nhật mục này sau #24 với các lỗi còn lại.
+
+## 8. Bật agent khi tag `@claude`
+
+Workflow `.github/workflows/claude.yml` đã có trong repo nhưng cần cài Claude GitHub App và secret một lần (Chính làm, vì là owner):
+
+- Cách nhanh: trong Claude Code tại repo này chạy `/install-github-app` và làm theo hướng dẫn. Lệnh này cài app và tạo secret.
+- Cách tay: cài app https://github.com/apps/claude cho repo `ndchinh2706/cosign`, rồi tạo secret `ANTHROPIC_API_KEY` (Settings → Secrets and variables → Actions).
+- Kiểm tra: comment `@claude đọc issue này và tóm tắt việc cần làm` trên một issue, xem tab Actions.
+- Lưu ý: workflow chạy được cả khi repo private (tính phút Actions). Khi chuyển public lúc 17:30, chỉ collaborator mới kích hoạt được.
