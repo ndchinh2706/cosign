@@ -9,8 +9,9 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-password}
     volumes:
-      # Quickstart mounts the host cwd at /opt/keycloak/data/h2; a named volume does the same job.
-      - tidecloak-data:/opt/keycloak/data/h2
+      # Bind mount, not a named volume: the image runs as uid 1000 and a fresh named volume is root-owned
+      # (AccessDenied on startup, #32). On Linux hosts: mkdir -p .tidecloak-data && chmod 777 .tidecloak-data
+      - ./.tidecloak-data:/opt/keycloak/data/h2
 
   api:
     build:
@@ -46,5 +47,4 @@ services:
       - api
 
 volumes:
-  tidecloak-data:
   api-data:
