@@ -39,7 +39,8 @@ export default function AgentConsole() {
   const [plain, setPlain] = useState<PlainRecord[] | null>(null)
   const [open, setOpen] = useState<Record<string, boolean>>({ st_04: true })
   const { on, send } = useCosignSocket(['run:run_01', 'incident:INC-2417', 'user:ai-oncall-agent'], { console: true })
-  const st = API_MODE === 'mock' ? mockState : { ...liveState, run: liveState.run ?? snapshot }
+  // Live state starts before /me and the run snapshot land; fall back to them until events arrive.
+  const st = API_MODE === 'mock' ? mockState : { ...liveState, run: liveState.run ?? snapshot, authority: liveState.authority.length ? liveState.authority : me?.authority ?? [] }
 
   // Live: fold every event; answer tool_call by decrypting in this tab (docs/API.md §6.4).
   useEffect(() => {

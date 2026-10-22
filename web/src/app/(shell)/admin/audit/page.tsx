@@ -52,6 +52,7 @@ export default function AdminAudit() {
           ))}
         </tbody>
       </table>
+      {data && !data.items.length && <p className="muted" style={{ margin: 0 }}>No audit events yet. Every action the agent or a person takes will be signed and listed here.</p>}
       {refused && (
         <div role="alertdialog" aria-label="Deletion refused" style={{ position: 'fixed', inset: 0, background: 'rgba(5,6,10,.55)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="card" style={{ width: 'min(520px, 92vw)', borderColor: 'var(--refused)', boxShadow: 'var(--shadow)', padding: 26, display: 'flex', flexDirection: 'column', gap: 14 }}>

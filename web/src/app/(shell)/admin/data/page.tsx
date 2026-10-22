@@ -19,7 +19,7 @@ const SAMPLE = 'mrc_8812'
 export default function DataBrowser() {
   const { data } = useApi<Merchants>('/admin/data/merchants')
   const { me } = useSession()
-  const { doDecrypt, hasRealmRole } = useTide()
+  const { doDecrypt } = useTide()
   const [views, setViews] = useState<View[] | null>(null)
   const [exported, setExported] = useState<Exported | null>(null)
 
@@ -61,7 +61,7 @@ export default function DataBrowser() {
       </div>
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
         <Icon name="lock" color="var(--text-muted)" />
-        <span>{hasRealmRole('_tide_customer_pii.selfdecrypt') ? 'You hold a decrypt role. Records still arrive as ciphertext and are decrypted only in this tab.' : (data?.info ?? 'You have infrastructure access, not data authority.')}</span>
+        <span>{me?.roles.includes('_tide_customer_pii.selfdecrypt') ? 'You hold a decrypt role. Records still arrive as ciphertext and are decrypted only in this tab.' : (data?.info ?? 'You have infrastructure access, not data authority.')}</span>
       </div>
 
       {views && (
