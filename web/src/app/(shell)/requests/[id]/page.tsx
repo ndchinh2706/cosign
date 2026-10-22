@@ -10,7 +10,7 @@ export default function ApprovalReview({ params }: { params: Promise<{ id: strin
   const { id } = use(params)
   const { cr, set, all, error } = useRequest(id)
   return (
-    <div data-screen="E3" style={{ padding: '24px 32px 100px', display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 1400 }}>
+    <div data-screen="E3" style={{ padding: '24px clamp(16px, 4vw, 32px) 100px', display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 1400 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
         <h1>Approvals</h1>
         <span className="muted" style={{ fontSize: 14 }}>{all.filter((r) => r.status === 'pending').length} change requests waiting on the quorum</span>

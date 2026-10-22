@@ -1,10 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { IdentityChip, QuorumSeal, RiskChip } from '@/components/ui'
 import { useApi } from '@/lib/api'
+import { API_MODE } from '@/lib/config'
 import { approvalState, useRequests } from '@/lib/requests'
 import { useSession } from '@/lib/session'
+import { useCosignSocket } from '@/lib/ws'
 
 type Incident = { id: string; title: string; service: string; severity: string; status: string; started_at: string; error_rate: number; owner_agent: string; owner_human: string; mini_timeline: { ts: string; label: string }[] }
 type Incidents = { stats: { active_incidents: number; agent_runs_today: number; pending_approvals: number; mttr_7d_min: number }; items: Incident[] }
@@ -15,35 +18,47 @@ const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 // E1: Linh's on-call home. The one question: is anything waiting on me?
 export default function IncidentsHome() {
   const { me } = useSession()
-  const { data } = useApi<Incidents>('/incidents')
-  const { data: services } = useApi<{ items: Service[] }>('/services')
+  const { data, mutate, setData } = useApi<Incidents>('/incidents')
+  const { data: services, mutate: refetchServices } = useApi<{ items: Service[] }>('/services')
+  const { on } = useCosignSocket(['incident:INC-2417'])
+  // Live refetches (KPIs, services); mock GETs are static, so patch the status in place.
+  useEffect(() => on('incident.updated', (e) => {
+    if (API_MODE === 'live') return void (mutate(), refetchServices())
+    const { id, status } = e.payload as { id: string; status: string }
+    setData((d) => {
+      if (!d) return d
+      const items = d.items.map((i) => (i.id === id ? { ...i, status } : i))
+      return { stats: { ...d.stats, active_incidents: items.filter((i) => i.status !== 'resolved').length }, items }
+    })
+  }), [on, mutate, refetchServices, setData])
   const { data: reqs } = useRequests()
   const mine = (reqs?.items ?? []).filter((r) => me && !approvalState(r, me.user.username, me.roles, me.user.type))
   const s = data?.stats
   const kpis: [string, string | number, string?][] = s ? [['Active incidents', s.active_incidents], ['Agent runs today', s.agent_runs_today], ['Waiting on you', mine.length, mine.length ? 'var(--pending)' : undefined], ['MTTR, last 7 days', `${s.mttr_7d_min} min`]] : []
   return (
-    <div data-screen="E1" style={{ padding: '28px 32px 100px', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1500 }}>
+    <div data-screen="E1" style={{ padding: '28px clamp(16px, 4vw, 32px) 100px', display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 1500 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <h1>Incidents</h1>
         <span className="muted" style={{ fontSize: 14 }}>{mine.length ? `${mine.length} change request${mine.length > 1 ? 's' : ''} waiting on your signature` : 'Nothing waiting on your signature'}</span>
       </div>
-      <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))' }}>
-        {kpis.map(([label, v, c], i) => (
-          <div key={label} style={{ padding: '14px 20px', borderLeft: i ? '1px solid var(--border)' : 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div className="card" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 1, background: 'var(--border)', overflow: 'hidden' }}>
+        {kpis.map(([label, v, c]) => (
+          <div key={label} style={{ padding: '14px 20px', background: 'var(--surface)', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span className="muted" style={{ fontSize: 12 }}>{label}</span>
             <span style={{ fontSize: 24, fontWeight: 500, color: c }}>{v}</span>
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(320px,1fr)', gap: 16, alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* ponytail: flex-wrap instead of a media query; bases and grows keep the 1.5:1 split, stacking below ~800px. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
+        <div style={{ flex: '1.5 1 480px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
           {data?.items.map((inc) => (
             <section key={inc.id} className="card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                 <span className="mono muted">{inc.id}</span>
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{inc.title}</h2>
                 <span className="pill" style={{ ['--c' as string]: 'var(--refused)' }}>{inc.severity.replace('SEV-', 'Sev ')}</span>
-                <span className="pill" style={{ ['--c' as string]: 'var(--pending)' }}>{inc.status}</span>
+                <span className="pill" style={{ ['--c' as string]: inc.status === 'resolved' ? 'var(--ok)' : 'var(--pending)' }}>{inc.status}</span>
               </div>
               <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
                 <div><div className="muted" style={{ fontSize: 12 }}>Error rate at open</div><div style={{ fontSize: 24, fontWeight: 500, color: 'var(--refused)' }}>{pct(inc.error_rate)}</div></div>
@@ -54,14 +69,14 @@ export default function IncidentsHome() {
                 </div>
               </div>
               <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {inc.mini_timeline.map((t) => <li key={t.ts} style={{ display: 'flex', gap: 12 }}><span className="muted" style={{ width: 44 }}>{t.ts.slice(11, 16)}</span>{t.label}</li>)}
+                {(inc.mini_timeline ?? []).map((t) => <li key={t.ts} style={{ display: 'flex', gap: 12 }}><span className="muted" style={{ width: 44 }}>{t.ts.slice(11, 16)}</span>{t.label}</li>)}
               </ol>
               <div><Link className="btn" href={`/incidents/${inc.id}`}>Open war room</Link></div>
             </section>
           ))}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <section className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ flex: '1 1 320px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <section id="approvals" className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Needs your approval</h2>
             {!mine.length && <p className="muted" style={{ margin: 0 }}>Nothing waiting on you.</p>}
             {mine.map((r) => (

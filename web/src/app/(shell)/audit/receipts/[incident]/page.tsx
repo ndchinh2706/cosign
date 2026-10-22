@@ -3,16 +3,17 @@
 import { Fragment, use, useEffect, useState } from 'react'
 import { IdentityChip, Mark, QuorumSeal } from '@/components/ui'
 import { ApiError, useApi } from '@/lib/api'
+import { API_MODE } from '@/lib/config'
 import { findUser } from '@/lib/users'
 
 type Receipt = {
   incident_id: string
   title: string
   generated_at: string
-  summary: { who: string[]; what: string; when: string; mttr_min: number | null }
+  summary: { who: string[]; what: string; when: string | null; mttr_min: number | null }
   approvals: { request_id: string; approver: string; display_name: string; signed_at: string; signature: string }[]
-  data_accessed: { record_ids: string[]; fields: string[]; granted_min: number; actual_use: string }
-  blocked_attempts: { request_id: string; actor: string; what: string; tier: string }[]
+  data_accessed: { record_ids: string[]; fields: string[]; granted_min: number | null; actual_use: string | null }
+  blocked_attempts: { request_id: string | null; actor: string; what: string; tier: string | null }[]
   signatures: { event: string; hash: string; signature: string }[]
   footer: string
 }
@@ -28,6 +29,7 @@ const PRINT_CSS = `@media print {
 export default function AccessReceipt({ params }: { params: Promise<{ incident: string }> }) {
   const { incident } = use(params)
   const { data: r, error, loading } = useApi<Receipt>(`/incidents/${incident}/receipt`)
+  const { data: inc } = useApi<{ resolved_at: string | null }>(`/incidents/${incident}`)
   const [shared, setShared] = useState(false)
 
   useEffect(() => {
@@ -51,7 +53,11 @@ export default function AccessReceipt({ params }: { params: Promise<{ incident: 
   const section = { display: 'flex', flexDirection: 'column' as const, gap: 12 }
   const heading = { margin: 0, fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }
   const width = { width: '100%', maxWidth: 900 }
-  const resolved = r?.summary.mttr_min != null
+  // mttr_min is computed even while the incident is open, so resolution comes from the incident itself.
+  // mock incident.json is the mid-incident snapshot; receipt.json is the finished one
+  const resolved = API_MODE === 'mock' ? r?.summary.mttr_min != null : inc?.resolved_at != null
+  const denied = error instanceof ApiError && error.status === 403
+  const rids = [...new Set(r?.approvals.map((a) => a.request_id))]
 
   return (
     <div data-screen="C2" style={{ padding: '28px 32px 100px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
@@ -64,11 +70,11 @@ export default function AccessReceipt({ params }: { params: Promise<{ incident: 
       </div>
       {loading && !r && <p className="muted" style={{ ...width, margin: 0 }}>Loading receipt…</p>}
       {error && (
-        <p style={{ ...width, margin: 0, color: error instanceof ApiError && error.status === 404 ? 'var(--text-muted)' : 'var(--refused)' }}>
-          {error instanceof ApiError && error.status === 404 ? 'No receipt for this incident.' : `Couldn't load the receipt. ${error.message}`}
+        <p style={{ ...width, margin: 0, color: (error instanceof ApiError && error.status === 404) || denied ? 'var(--text-muted)' : 'var(--refused)' }}>
+          {error instanceof ApiError && error.status === 404 ? 'No receipt for this incident.' : denied ? 'Receipts are visible to compliance, security and on-call.' : `Couldn't load the receipt. ${error.message}`}
         </p>
       )}
-      {r && !resolved && (
+      {r && (API_MODE === 'mock' || inc) && !resolved && (
         <div role="status" style={{ ...width, padding: '10px 14px', borderRadius: 'var(--radius)', border: '1px solid color-mix(in oklch, var(--pending) 40%, transparent)', background: 'color-mix(in oklch, var(--pending) 10%, transparent)' }}>
           Incident still open · receipt is partial
         </div>
@@ -89,9 +95,9 @@ export default function AccessReceipt({ params }: { params: Promise<{ incident: 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 16 }}>
               {[
                 ['Incident', r.incident_id],
-                ['Who', r.summary.who.join(', ')],
+                ['Who', r.summary.who.join(', ') || '—'],
                 ['What', r.summary.what],
-                ['When', r.summary.when],
+                ['When', r.summary.when ?? '—'],
                 ['Time to resolve', resolved ? `${r.summary.mttr_min} min` : 'Open'],
               ].map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -102,23 +108,33 @@ export default function AccessReceipt({ params }: { params: Promise<{ incident: 
             </div>
           </section>
 
-          <section style={section}>
-            <h2 style={heading}>Approvals{r.approvals[0] && <> · <span className="mono">{r.approvals[0].request_id}</span></>}</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
-              {/* ponytail: receipt carries no threshold, so the seal shows the signers it has (min 2, the T2 quorum) */}
-              <QuorumSeal required={Math.max(2, r.approvals.length)} approvals={r.approvals.map((a) => ({ username: a.approver }))} size={96} />
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(150px,auto) auto 1fr', alignItems: 'center', gap: '10px 20px', flex: 1, minWidth: 260 }}>
-                {r.approvals.length === 0 && <span className="muted">No approvals yet.</span>}
-                {r.approvals.map((a) => (
-                  <Fragment key={a.approver + a.signed_at}>
-                    <IdentityChip person={{ username: a.approver, display_name: a.display_name, type: findUser(a.approver)?.type }} size="sm" sub="role" />
-                    <span className="muted" style={{ fontSize: 12 }}>signed {a.signed_at.slice(11, 19)}</span>
-                    <code className="muted" style={{ fontSize: 12, justifySelf: 'end' }}>{a.signature}</code>
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-          </section>
+          {rids.length === 0 && (
+            <section style={section}>
+              <h2 style={heading}>Approvals</h2>
+              <span className="muted">No approvals yet.</span>
+            </section>
+          )}
+          {rids.map((rid) => {
+            const group = r.approvals.filter((a) => a.request_id === rid)
+            return (
+              <section key={rid} style={section}>
+                <h2 style={heading}>Approvals · <span className="mono">{rid}</span></h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 28, flexWrap: 'wrap' }}>
+                  {/* ponytail: receipt carries no threshold, so each request's seal shows the signers it has (min 2, the T2 quorum) */}
+                  <QuorumSeal required={Math.max(2, group.length)} approvals={group.map((a) => ({ username: a.approver }))} size={96} />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(150px,auto) auto 1fr', alignItems: 'center', gap: '10px 20px', flex: 1, minWidth: 260 }}>
+                    {group.map((a) => (
+                      <Fragment key={a.approver + a.signed_at}>
+                        <IdentityChip person={{ username: a.approver, display_name: a.display_name, type: findUser(a.approver)?.type }} size="sm" sub="role" />
+                        <span className="muted" style={{ fontSize: 12 }}>signed {a.signed_at.slice(11, 19)}</span>
+                        <code className="muted" style={{ fontSize: 12, justifySelf: 'end' }}>{a.signature}</code>
+                      </Fragment>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )
+          })}
 
           <section style={section}>
             <h2 style={heading}>Data accessed</h2>
@@ -132,18 +148,18 @@ export default function AccessReceipt({ params }: { params: Promise<{ incident: 
               <span className="muted">Values</span>
               <span>Not stored. Decrypted in the approved browser session only.</span>
               <span className="muted">Actual use</span>
-              <span>{r.data_accessed.actual_use} of {r.data_accessed.granted_min} min granted</span>
+              <span>{r.data_accessed.actual_use ? `${r.data_accessed.actual_use} of ${r.data_accessed.granted_min} min granted` : 'No elevated access granted'}</span>
             </div>
           </section>
 
           <section style={{ ...section, gap: 10 }}>
             <h2 style={heading}>Blocked attempts · {r.blocked_attempts.length}</h2>
             {r.blocked_attempts.length === 0 && <span className="muted">None.</span>}
-            {r.blocked_attempts.map((b) => (
-              <div key={b.request_id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '10px 12px', borderRadius: 'var(--radius)', background: 'color-mix(in oklch, var(--refused) 7%, var(--surface-2))' }}>
-                <code style={{ fontSize: 12, fontWeight: 600 }}>{b.request_id}</code>
+            {r.blocked_attempts.map((b, i) => (
+              <div key={b.request_id ?? i} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', padding: '10px 12px', borderRadius: 'var(--radius)', background: 'color-mix(in oklch, var(--refused) 7%, var(--surface-2))' }}>
+                {b.request_id && <code style={{ fontSize: 12, fontWeight: 600 }}>{b.request_id}</code>}
                 <span style={{ flex: 1, minWidth: 200 }}>{b.what}</span>
-                <span className="muted" style={{ fontSize: 12 }}>{findUser(b.actor)?.displayName ?? b.actor} · {b.tier}</span>
+                <span className="muted" style={{ fontSize: 12 }}>{findUser(b.actor)?.displayName ?? b.actor}{b.tier && ` · ${b.tier}`}</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--refused)' }}>Blocked</span>
               </div>
             ))}

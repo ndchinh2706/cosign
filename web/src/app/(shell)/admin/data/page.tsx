@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from '@/components/AppShell'
 import { Icon, IdentityChip } from '@/components/ui'
 import { apiGet, apiPost, loadMock, useApi } from '@/lib/api'
 import { API_MODE } from '@/lib/config'
@@ -17,16 +18,23 @@ const SAMPLE = 'mrc_8812'
 
 // R3: an admin can read every byte of the table and still not one customer's name.
 export default function DataBrowser() {
-  const { data } = useApi<Merchants>('/admin/data/merchants')
+  const { data, error, loading } = useApi<Merchants>('/admin/data/merchants')
   const { me } = useSession()
   const { doDecrypt } = useTide()
   const [views, setViews] = useState<View[] | null>(null)
   const [exported, setExported] = useState<Exported | null>(null)
+  const [err, setErr] = useState<string | null>(null)
 
   const compare = async () => {
     if (views) return setViews(null)
-    const { items } = await apiGet<{ items: { id: string; tag: string; ciphertext: string }[] }>(`/records?ids=${SAMPLE}`)
-    const rec = items[0]
+    setErr(null)
+    let rec
+    try {
+      rec = (await apiGet<{ items: { id: string; tag: string; ciphertext: string }[] }>(`/records?ids=${SAMPLE}`)).items[0]
+    } catch (e) {
+      return setErr((e as Error).message)
+    }
+    if (!rec) return setErr(`${SAMPLE} has no stored ciphertext yet. Seed records at /admin/data/seed.`)
     // This tab decrypts with its own session; Tide decides, not this code.
     const self: View = { person: me!.user, note: `This session · ${me!.roles[0]}`, cipher: rec.ciphertext }
     try {
@@ -51,18 +59,21 @@ export default function DataBrowser() {
         <code style={{ fontSize: 13, padding: '3px 8px', borderRadius: 4, background: 'var(--surface-2)' }}>{data?.table ?? 'merchants'}</code>
         {data && <span className="muted">{data.total.toLocaleString('en-US')} rows</span>}
         <span style={{ flex: 1 }} />
-        <button className="btn" onClick={compare} aria-pressed={!!views}>
+        <button className="btn" onClick={compare} disabled={!me} aria-pressed={!!views}>
           <span style={{ width: 28, height: 16, borderRadius: 8, background: views ? 'var(--text)' : 'var(--control)', position: 'relative' }}>
             <span style={{ position: 'absolute', top: 2, left: views ? 14 : 2, width: 12, height: 12, borderRadius: '50%', background: views ? 'var(--surface)' : '#fff', transition: 'left 150ms' }} />
           </span>
           Compare views
         </button>
-        <button className="btn" onClick={async () => setExported(await apiPost<Exported>('/admin/data/merchants/export'))}>Export table</button>
+        {me?.roles.includes('platform-admin') && <button className="btn" onClick={() => apiPost<Exported>('/admin/data/merchants/export').then(setExported, (e: Error) => toast({ kind: 'refused', title: 'Export refused.', body: e.message }))}>Export table</button>}
       </div>
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px' }}>
         <Icon name="lock" color="var(--text-muted)" />
         <span>{me?.roles.includes('_tide_customer_pii.selfdecrypt') ? 'You hold a decrypt role. Records still arrive as ciphertext and are decrypted only in this tab.' : (data?.info ?? 'You have infrastructure access, not data authority.')}</span>
       </div>
+      {err && <p style={{ color: 'var(--refused)', margin: 0, fontSize: 13 }}>Couldn&apos;t compare views. {err}</p>}
+      {error && <p style={{ color: 'var(--refused)', margin: 0 }}>Couldn&apos;t load merchants. {error.message}</p>}
+      {loading && !data && <p className="muted" style={{ margin: 0 }}>Loading…</p>}
 
       {views && (
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${views.length},minmax(0,1fr))`, gap: 16, animation: 'cs-in 260ms ease' }}>
@@ -90,28 +101,30 @@ export default function DataBrowser() {
         </div>
       )}
 
-      <table className="card" style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', overflow: 'hidden' }}>
-        <thead>
-          <tr className="mono muted" style={{ fontSize: 12, textAlign: 'left' }}>
-            {(data?.columns ?? []).map((c) => (
-              <th key={c} style={{ fontWeight: 400, padding: '10px 18px', borderBottom: '1px solid var(--border)', width: c === 'id' ? 120 : undefined }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{c}{c !== 'id' && <Icon name="lock" size={12} />}</span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data?.items.map((r) => (
-            <tr key={r.id} style={{ borderBottom: '1px solid var(--rule)' }}>
-              {data.columns.map((c) => (
-                <td key={c} className="mono" style={{ padding: '11px 18px', fontSize: c === 'id' ? 13 : 12, color: c === 'id' ? 'var(--text)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {c === 'id' ? r[c] : String(r[c]).replace('MOCK-CIPHERTEXT-', '')}
-                </td>
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <thead>
+            <tr className="mono muted" style={{ fontSize: 12, textAlign: 'left' }}>
+              {(data?.columns ?? []).map((c) => (
+                <th key={c} style={{ fontWeight: 400, padding: '10px 18px', borderBottom: '1px solid var(--border)', width: c === 'id' ? 120 : undefined }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>{c}{c !== 'id' && <Icon name="lock" size={12} />}</span>
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data?.items.map((r) => (
+              <tr key={r.id} style={{ borderBottom: '1px solid var(--rule)' }}>
+                {data.columns.map((c) => (
+                  <td key={c} className="mono" style={{ padding: '11px 18px', fontSize: c === 'id' ? 13 : 12, color: c === 'id' ? 'var(--text)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {c === 'id' ? r[c] : String(r[c]).replace('MOCK-CIPHERTEXT-', '')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {exported && (
         <div role="dialog" aria-label="Export ready" style={{ position: 'fixed', inset: 0, background: 'rgba(5,6,10,.55)', zIndex: 70, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

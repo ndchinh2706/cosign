@@ -16,6 +16,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-theme="dark" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Saved theme before first paint, so light viewers get no dark flash on any route. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('cosign.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}" }} />
+      </head>
       <body>
         <Providers>
           <SessionProvider>{children}</SessionProvider>

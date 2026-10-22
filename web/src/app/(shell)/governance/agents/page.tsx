@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from '@/components/AppShell'
 import { AuthorityMeter, IdentityChip, type Authority } from '@/components/ui'
 import { apiPost, useApi } from '@/lib/api'
+import { useCosignSocket } from '@/lib/ws'
 
 export type Agent = { username: string; display_name: string; type: 'agent'; purpose: string; model: string; status: string; authority: Authority[]; runs_today: number; last_action: { ts: string; label: string } | null; flags: string[] }
 type Revoked = { revoked: string[]; withdrawn_requests: string[]; run_paused: string | null; note: string }
@@ -15,6 +16,12 @@ const STATUS_C: Record<string, string> = { waiting_approval: 'var(--pending)', e
 export default function Agents() {
   const { data, mutate } = useApi<{ items: Agent[] }>('/agents')
   const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const { on } = useCosignSocket(['role:security-lead'])
+  useEffect(() => {
+    const offs = ['authority.updated', 'request.updated', 'agent.run.status'].map((t) => on(t, () => mutate()))
+    return () => offs.forEach((f) => f())
+  }, [on, mutate])
   const revokeAll = async () => {
     setBusy(true)
     try {
@@ -33,7 +40,14 @@ export default function Agents() {
         <h1>Agents</h1>
         <span style={{ flex: 1 }} />
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-          <button className="btn" style={{ height: 38, color: 'var(--refused)', borderColor: 'var(--refused)' }} onClick={revokeAll} disabled={busy}>Revoke all elevated access</button>
+          {confirming ? (
+            <span style={{ display: 'flex', gap: 8 }}>
+              <button className="btn" style={{ height: 38 }} onClick={() => setConfirming(false)}>Cancel</button>
+              <button className="btn" style={{ height: 38, color: 'var(--refused)', borderColor: 'var(--refused)' }} onClick={() => { setConfirming(false); revokeAll() }} disabled={busy}>Revoke now</button>
+            </span>
+          ) : (
+            <button className="btn" style={{ height: 38, color: 'var(--refused)', borderColor: 'var(--refused)' }} onClick={() => setConfirming(true)} disabled={busy}>Revoke all elevated access</button>
+          )}
           <span className="muted" style={{ fontSize: 12 }}>Reducing authority is instant, no quorum.</span>
         </div>
       </div>

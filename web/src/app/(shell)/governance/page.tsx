@@ -1,9 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { Icon, IdentityChip, QuorumSeal, RiskChip, type ICONS } from '@/components/ui'
+import { API_MODE } from '@/lib/config'
 import { useApi } from '@/lib/api'
 import { useRequests } from '@/lib/requests'
+import { useCosignSocket } from '@/lib/ws'
 
 type Overview = { stats: { pending_change_requests: number; agents_elevated_now: number; injection_detections_24h: number; policy_version: string; policy_signed: boolean } }
 type AuthMap = { capabilities: string[]; identities: { username: string; display_name: string; type: 'agent' | 'human'; cells: Record<string, 'allowed' | 'locked' | 'pending' | 'granted'> }[] }
@@ -14,12 +17,23 @@ const CELL: Record<string, [keyof typeof ICONS, string, string]> = {
   pending: ['clock', 'var(--pending)', 'Pending'],
   granted: ['clock', 'var(--text)', 'Granted, time left'],
 }
-const age = (iso: string) => `${Math.max(1, Math.round((Date.parse('2026-10-22T03:21:00+07:00') - Date.parse(iso)) / 60000))}m`
+const age = (s?: number) => (s == null ? '' : s < 3600 ? `${Math.max(1, Math.round(s / 60))}m` : `${Math.floor(s / 3600)}h`)
 
 // L1: the security lead's question is "what is trying to gain authority right now?"
 export default function Governance() {
-  const { data: ov } = useApi<Overview>('/governance/overview')
-  const { data: map } = useApi<AuthMap>('/governance/authority-map')
+  const { data: ov, mutate: reOv } = useApi<Overview>('/governance/overview')
+  const { data: map, mutate: reMap, setData: setMap } = useApi<AuthMap>('/governance/authority-map')
+  const { on } = useCosignSocket(['role:security-lead'])
+  useEffect(() => {
+    const r = () => { reOv(); if (API_MODE === 'live') reMap() }
+    const offs = ['authority.updated', 'injection.detected', 'request.created', 'request.updated'].map((t) => on(t, r))
+    // Mock GETs are static, so patch the identity's cells from the event itself.
+    offs.push(on('authority.updated', (e) => {
+      const p = e.payload as { user: string; authority?: { capability: string; state: AuthMap['identities'][number]['cells'][string] }[] }
+      if (p.authority) setMap((m) => m && { ...m, identities: m.identities.map((i) => (i.username === p.user ? { ...i, cells: { ...i.cells, ...Object.fromEntries(p.authority!.map((a) => [a.capability, a.state])) } } : i)) })
+    }))
+    return () => offs.forEach((f) => f())
+  }, [on, reOv, reMap, setMap])
   const { data: reqs } = useRequests()
   const queue = (reqs?.items ?? []).filter((r) => r.status === 'pending')
   const s = ov?.stats
@@ -37,12 +51,12 @@ export default function Governance() {
           </div>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 18, alignItems: 'start' }}>
-        <section className="card" style={{ overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,420px),1fr))', gap: 18, alignItems: 'start' }}>
+        <section id="approvals" className="card" style={{ overflowX: 'auto' }}>
           <h2 style={{ margin: 0, padding: '16px 18px', fontSize: 14, fontWeight: 600, borderBottom: '1px solid var(--border)' }}>Change request queue</h2>
           {!queue.length && <p className="muted" style={{ padding: '24px 18px', margin: 0 }}>Queue is empty.</p>}
           {queue.map((q) => (
-            <Link key={q.id} href={`/governance/requests/${q.id}`} style={{ display: 'grid', gridTemplateColumns: '80px 120px minmax(0,1fr) 140px 70px 44px', gap: 10, alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--rule)' }}>
+            <Link key={q.id} href={`/governance/requests/${q.id}`} style={{ display: 'grid', gridTemplateColumns: '80px 120px minmax(0,1fr) 140px 70px 44px', gap: 10, minWidth: 680, alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid var(--rule)' }}>
               <span className="mono">{q.id}</span>
               <IdentityChip person={q.requester} size="xs" />
               <span style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0 }}>
@@ -52,7 +66,7 @@ export default function Governance() {
               </span>
               <RiskChip tier={q.tier} />
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><QuorumSeal required={q.quorum.required} approvals={q.quorum.signed_by} size={26} />{q.quorum.signed_by.length}/{q.quorum.required}</span>
-              <span className="muted" style={{ fontSize: 12 }}>{age(q.created_at)}</span>
+              <span className="muted" style={{ fontSize: 12 }}>{age((q as { age_s?: number }).age_s)}</span>
             </Link>
           ))}
         </section>

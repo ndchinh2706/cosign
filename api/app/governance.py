@@ -117,6 +117,16 @@ class TideGovernanceError(ApiError):
         super().__init__(502, "tide_error", message, details)
 
 
+class TideAwaitingSignature(Exception):
+    """Tide queued the change request but a tide-realm-admin must sign it in the enclave
+    (multiAdmin realm: /approve answers mode=needs-approval). Not a failure: the caller polls
+    roles_present() and calls commit_grant() once the role lands."""
+
+    def __init__(self, change_request_ids: list[str]):
+        super().__init__(f"awaiting Tide signature on {change_request_ids}")
+        self.change_request_ids = change_request_ids
+
+
 class RealTideGovernance(MockTideGovernance):
     """Hybrid: Cosign counts quorum and keeps its own view of authority (mock bookkeeping);
     on commit/revoke it also drives TideCloak IGA (spike #1: role-mappings -> PENDING change
@@ -182,19 +192,21 @@ class RealTideGovernance(MockTideGovernance):
     def _user_realm_roles(self, uid: str) -> set[str]:
         return {r["name"] for r in self._call("GET", f"users/{uid}/role-mappings/realm").json()}
 
-    def _approve_matching(self, action: str, uid: str, role_ids: set[str]) -> list[str]:
+    def _approve_matching(self, action: str, uid: str, role_ids: set[str]) -> tuple[list[str], bool]:
         crs = self._call("GET", "iga/change-requests", params={"status": "PENDING"}).json()
         if isinstance(crs, dict):
             crs = crs.get("changeRequests") or crs.get("items") or []
-        done = []
+        done, needs_signature = [], False
         for cr in crs:
             if cr.get("actionType") != action or cr.get("entityId") != uid:
                 continue
             if not role_ids & {row.get("ROLE_ID") for row in cr.get("rows", [])}:
                 continue
-            self._call("POST", f"iga/change-requests/{cr['id']}/approve", json={})
+            r = self._call("POST", f"iga/change-requests/{cr['id']}/approve", json={})
             done.append(cr["id"])
-        return done
+            if r.content and r.headers.get("content-type", "").startswith("application/json"):
+                needs_signature |= r.json().get("mode") == "needs-approval"
+        return done, needs_signature
 
     def _change_roles(self, username: str, roles: list[str], grant: bool) -> list[str]:
         uid = self._user_id(username)
@@ -204,14 +216,24 @@ class RealTideGovernance(MockTideGovernance):
         ids: list[str] = []
         if todo:
             self._call("POST" if grant else "DELETE", f"users/{uid}/role-mappings/realm", json=todo)
-            ids = self._approve_matching("GRANT_ROLES" if grant else "REVOKE_ROLES", uid, {r["id"] for r in todo})
+            ids, needs_signature = self._approve_matching("GRANT_ROLES" if grant else "REVOKE_ROLES", uid,
+                                                          {r["id"] for r in todo})
             if not ids:
                 raise TideGovernanceError("no matching PENDING change request after role-mapping call")
+            if needs_signature:
+                raise TideAwaitingSignature(ids)
         after = self._user_realm_roles(uid)
         bad = [r for r in roles if (r in after) != grant]
         if bad:
             raise TideGovernanceError(f"roles {bad} not {'granted' if grant else 'removed'} after approve")
         return ids
+
+    def roles_present(self, username: str, roles: list[str]) -> bool:
+        return set(roles) <= self._user_realm_roles(self._user_id(username))
+
+    def commit_grant(self, tide_cr_id, target_user, add, expires_at=None):
+        """Record a grant in Cosign's view once Tide applied it (after TideAwaitingSignature)."""
+        super().apply(tide_cr_id, target_user, add, [], expires_at)
 
     def apply(self, tide_cr_id, target_user, add, remove, expires_at=None):
         self.last_change_request_ids = []
@@ -233,6 +255,9 @@ class RealTideGovernance(MockTideGovernance):
             return
         try:
             self._change_roles(target_user, roles, False)
+        except TideAwaitingSignature as exc:
+            # ponytail: Cosign stops honouring the role now; Tide drops it only once an admin signs the CR.
+            log.warning("revoke of %s from %s awaits a Tide signature: %s", roles, target_user, exc.change_request_ids)
         except (httpx.HTTPError, TideGovernanceError, KeyError, ValueError) as exc:
             self._fail("revoke", exc)
 

@@ -12,7 +12,7 @@ export type Step = {
   tool_name?: string
   input?: Record<string, unknown>
   output?: Record<string, unknown>
-  error?: { code: string; title?: string; missing_role?: string; note?: string }
+  error?: { code: string; title?: string; message?: string; missing_role?: string; note?: string }
   tier?: string
   tier_note?: string
   escalated?: boolean
@@ -21,7 +21,7 @@ export type Step = {
 }
 export type Run = { id: string; incident_id: string; status: string; steps: Step[]; context_flagged: boolean; context_quarantined: boolean }
 export type Injection = { line: string; score: number; lang: string; effect: string }
-export type Request = { id: string; status: string; tier?: string; capability?: string; quorum?: { required: number; approvals: number; signed_by: { username: string }[] } }
+export type Request = { id: string; status: string; tier?: string; capability?: string; target_user?: string; denied_by?: { display_name?: string }; deny_reason?: string; quorum?: { required: number; approvals: number; signed_by: { username: string }[] } }
 
 export type ConsoleState = {
   run?: Run
@@ -62,6 +62,10 @@ export function applyEvent(st: ConsoleState, e: Envelope): ConsoleState {
       return { ...st, requests: { ...st.requests, [String(p.id)]: p as unknown as Request } }
     case 'request.approved':
       return { ...st, grantExpires: String(p.expires_at) }
+    case 'request.expired': {
+      const id = String(p.id)
+      return st.requests[id] ? { ...st, requests: { ...st.requests, [id]: { ...st.requests[id], status: 'expired' } } } : st
+    }
     default:
       return st
   }

@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
-import { useApi } from '@/lib/api'
+import { apiPost, useApi } from '@/lib/api'
+import { approvalState, useRequests } from '@/lib/requests'
 import { navFor, screenFor } from '@/lib/screens'
 import { useSession } from '@/lib/session'
 import { useTide } from '@/lib/tide'
@@ -13,7 +14,7 @@ import { NotificationsDrawer, type Notification, type NotificationFeed } from '.
 import { ReplayControls, RoleSwitcher } from './RoleSwitcher'
 import { API_MODE } from '@/lib/config'
 
-type Incident = { id: string; service: string; status: string; started_at: string; resolved_at: string | null }
+type Incident = { id: string; service: string; status: string; started_at: string; resolved_at: string | null; run_id?: string }
 type Toast = { id: string; kind: string; title: string; body?: string }
 
 // Pages raise a toast without prop drilling: toast({ kind, title, body }).
@@ -22,14 +23,8 @@ export const toast = (t: Omit<Toast, 'id'>) => window.dispatchEvent(new CustomEv
 const hhmm = (iso?: string | null) => (iso ? iso.slice(11, 16) : '')
 const TOAST_C: Record<string, string> = { ok: 'var(--ok)', refused: 'var(--refused)', warn: 'var(--pending)', pending: 'var(--pending)' }
 
-// Theme lives on <html data-theme>; the choice is a per-viewer convenience in localStorage.
+// Theme lives on <html data-theme>; the root layout applies the saved choice before paint.
 function useTheme() {
-  useEffect(() => {
-    try {
-      const t = localStorage.getItem('cosign.theme')
-      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
-    } catch {}
-  }, [])
   return () => {
     const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'
     document.documentElement.dataset.theme = next
@@ -37,6 +32,17 @@ function useTheme() {
       localStorage.setItem('cosign.theme', next)
     } catch {}
   }
+}
+
+// Live Tide: wait for the SDK, then send signed-out users to /login before any API call fires.
+export function AuthGate({ children }: { children: ReactNode }) {
+  const { mode, ready, authenticated } = useTide()
+  const router = useRouter()
+  const blocked = mode === 'live' && !(ready && authenticated)
+  useEffect(() => {
+    if (mode === 'live' && ready && !authenticated) router.replace('/login')
+  }, [mode, ready, authenticated, router])
+  return blocked ? null : <>{children}</>
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -54,10 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [me, pathname, hasRealmRole, router])
 
   const { data: incident, setData: setIncident } = useApi<Incident>('/incidents/INC-2417')
-  const { data: feed, setData: setFeed } = useApi<NotificationFeed>(me ? `/notifications?as=${demoUser}` : null)
+  const { data: feed, setData: setFeed, mutate: refetchFeed } = useApi<NotificationFeed>(me ? `/notifications?as=${demoUser}` : null)
+  const { data: reqs } = useRequests()
   const [drawer, setDrawer] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
-  const { on } = useCosignSocket(['incident:INC-2417', `user:${demoUser}`])
+  const { on } = useCosignSocket(['incident:INC-2417', `user:${demoUser}`, ...(incident?.run_id ? [`run:${incident.run_id}`] : [])])
 
   useEffect(() => {
     const mine = (e: Envelope) => !e.channel?.startsWith('user:') || e.channel === `user:${demoUser}`
@@ -65,11 +72,18 @@ export function AppShell({ children }: { children: ReactNode }) {
       on('incident.updated', (e) => setIncident((i) => (i ? { ...i, ...(e.payload as Partial<Incident>) } : i))),
       on('notification', (e) => {
         if (!mine(e)) return
+        // live payloads lack requester and body, so reload the feed; the mock replay merges.
+        if (API_MODE === 'live') return refetchFeed()
         const n = { ...(e.payload as unknown as Notification), ts: e.ts, read: false }
         setFeed((f) => {
           if (!f || f.groups.some((g) => g.items.some((i) => i.id === n.id))) return f
           return { unread: f.unread + 1, groups: f.groups.map((g) => (g.id === n.group ? { ...g, items: [n, ...g.items] } : g)) }
         })
+      }),
+      on('request.updated', (e) => {
+        const r = e.payload as { id: string; status: string; quorum?: { approvals: number } }
+        // Decided requests drop out of the approval group; their unread items leave the bell count too.
+        setFeed((f) => f && { ...f, unread: Math.max(0, f.unread - (f.groups.find((g) => g.id === 'approval')?.items.filter((i) => i.request_id === r.id && r.status !== 'pending' && !i.read).length ?? 0)), groups: f.groups.map((g) => (g.id !== 'approval' ? g : { ...g, items: g.items.flatMap((i) => (i.request_id !== r.id ? [i] : r.status === 'pending' ? [{ ...i, approvals: r.quorum?.approvals ?? i.approvals }] : [])) })) })
       }),
       on('toast', (e) => {
         if (!mine(e)) return
@@ -88,9 +102,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       offs.forEach((off) => off())
       window.removeEventListener('cosign:toast', local)
     }
-  }, [on, demoUser, setIncident, setFeed])
+  }, [on, demoUser, setIncident, setFeed, refetchFeed])
 
-  const approvals = feed?.groups.find((g) => g.id === 'approval')?.items.length ?? 0
+  // Same count as E1 "Waiting on you".
+  const approvals = (reqs?.items ?? []).filter((r) => me && !approvalState(r, me.user.username, me.roles, me.user.type)).length
+  const markRead = (id: string) => {
+    apiPost(`/notifications/${id}/read`).catch(() => {})
+    setFeed((f) => f && { unread: Math.max(0, f.unread - 1), groups: f.groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, read: true } : i)) })) })
+  }
   const resolved = incident?.status === 'resolved'
 
   return (
@@ -101,7 +120,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <nav aria-label="Main">
           {nav.map((n) => (
-            <Link key={n.href} href={n.href} className="rail-item" title={n.label} aria-label={n.label} aria-current={pathname === n.href ? 'page' : undefined}>
+            <Link key={n.label} href={n.href} className="rail-item" title={n.label} aria-label={n.label} aria-current={pathname === n.href ? 'page' : undefined}>
               <Icon name={n.icon as keyof typeof ICONS} />
               {n.label === 'Approvals' && approvals > 0 && <span className="rail-badge">{approvals}</span>}
             </Link>
@@ -116,20 +135,20 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <header className="topbar">
-          <div className="desk" style={{ display: 'flex', alignItems: 'baseline', gap: 8, whiteSpace: 'nowrap' }}>
+          <div className="desk wide" style={{ display: 'flex', alignItems: 'baseline', gap: 8, whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 14, fontWeight: 600 }}>Northwind Pay</span>
             <span className="mono muted" style={{ fontSize: 12 }}>northwind-prod</span>
           </div>
           {incident && (
-            <Link href={me?.roles.includes('agent') ? '/agent' : `/incidents/${incident.id}`} className="btn" style={{ gap: 8 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: resolved ? 'var(--ok)' : 'var(--refused)' }} />
+            <Link href={me?.roles.includes('agent') ? '/agent' : `/incidents/${incident.id}`} className="btn" style={{ gap: 8, minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ width: 6, height: 6, flex: 'none', borderRadius: '50%', background: resolved ? 'var(--ok)' : 'var(--refused)' }} />
               <span className="mono">{incident.id}</span>
               <span className="muted">·</span>
-              <span>{incident.service} {incident.status}</span>
-              <span className="muted">· {hhmm(resolved ? incident.resolved_at : incident.started_at)}</span>
+              <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{incident.service} {incident.status}</span>
+              <span className="muted desk">· {hhmm(resolved ? incident.resolved_at : incident.started_at)}</span>
             </Link>
           )}
-          <div className="desk card" style={{ flex: '0 1 200px', height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', color: 'var(--text-muted)' }}>
+          <div className="desk wide card" style={{ flex: '0 1 200px', height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', color: 'var(--text-muted)' }}>
             <Icon name="search" size={14} />
             <span style={{ flex: 1 }}>Search</span>
             <span style={{ fontSize: 12, border: '1px solid var(--border)', borderRadius: 4, padding: '0 5px' }}>⌘K</span>
@@ -155,7 +174,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {API_MODE === 'mock' && <ReplayControls />}
-      {drawer && feed && <NotificationsDrawer feed={feed} roles={me?.roles ?? []} onClose={() => setDrawer(false)} />}
+      {drawer && feed && <NotificationsDrawer feed={feed} roles={me?.roles ?? []} onClose={() => setDrawer(false)} onRead={markRead} />}
 
       <div style={{ position: 'fixed', bottom: 72, right: 16, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 8, width: 316 }} aria-live="polite">
         {toasts.map((t) => (

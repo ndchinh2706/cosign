@@ -85,7 +85,7 @@ const TIER_C = ['var(--text-muted)', 'var(--accent)', 'var(--pending)', 'var(--r
 export function RiskChip({ tier, label, elevated }: { tier: number | string; label?: string; elevated?: string }) {
   const t = typeof tier === 'string' ? Number(tier.replace(/\D/g, '')) || 0 : tier
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, maxWidth: '100%' }}>
       <span className="pill" style={{ ['--c' as string]: TIER_C[t] }}>{label ?? TIERS[t]}</span>
       {elevated && <span style={{ fontSize: 12, color: 'var(--refused)' }}>{elevated}</span>}
     </span>
