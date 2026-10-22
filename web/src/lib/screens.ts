@@ -23,34 +23,37 @@ export const SCREENS: Record<string, Screen> = {
   C2: { code: 'C2', name: 'Access receipt', route: '/audit/receipts/[incident]', roles: ['compliance'], proto: 'Cosign Compliance.dc.html' },
 }
 
-export type NavItem = { label: string; href: string }
+export type NavItem = { label: string; href: string; icon: string }
 
 // Sidebar per role, docs/SCREENS.md §2.
 export const NAV_BY_ROLE: Record<string, NavItem[]> = {
   agent: [
-    { label: 'Console', href: '/agent' },
-    { label: 'Run summary', href: '/agent/runs/run_01/summary' },
+    { label: 'Console', href: '/agent', icon: 'terminal' },
+    { label: 'Run summary', href: '/agent/runs/run_01/summary', icon: 'doc' },
   ],
   oncall: [
-    { label: 'Incidents', href: '/incidents' },
-    { label: 'War room', href: '/incidents/INC-2417' },
-    { label: 'Approvals', href: '/requests/CR-0192' },
+    { label: 'Incidents', href: '/incidents', icon: 'alert' },
+    { label: 'War room', href: '/incidents/INC-2417', icon: 'server' },
+    { label: 'Approvals', href: '/requests/CR-0192', icon: 'check' },
   ],
   'security-lead': [
-    { label: 'Governance', href: '/governance' },
-    { label: 'Approvals', href: '/governance/requests/CR-0193' },
-    { label: 'Agents', href: '/governance/agents' },
-    { label: 'Policies', href: '/governance/policies' },
+    { label: 'Governance', href: '/governance', icon: 'shield' },
+    { label: 'Approvals', href: '/governance/requests/CR-0193', icon: 'check' },
+    { label: 'Agents', href: '/governance/agents', icon: 'hex' },
+    { label: 'Policies', href: '/governance/policies', icon: 'doc' },
   ],
   'platform-admin': [
-    { label: 'Users & Roles', href: '/admin/users' },
-    { label: 'Data', href: '/admin/data' },
-    { label: 'Audit', href: '/admin/audit' },
+    { label: 'Users & Roles', href: '/admin/users', icon: 'users' },
+    { label: 'Data', href: '/admin/data', icon: 'db' },
+    { label: 'Audit', href: '/admin/audit', icon: 'list' },
   ],
   compliance: [
-    { label: 'Audit Trail', href: '/audit' },
-    { label: 'Access Receipts', href: '/audit/receipts/INC-2417' },
+    { label: 'Audit Trail', href: '/audit', icon: 'list' },
+    { label: 'Access Receipts', href: '/audit/receipts/INC-2417', icon: 'doc' },
   ],
 }
 
 export const navFor = (roles: string[]) => roles.flatMap((r) => NAV_BY_ROLE[r] ?? [])
+
+const routeRe = (route: string) => new RegExp('^' + route.replace(/\[[^\]]+\]/g, '[^/]+') + '$')
+export const screenFor = (pathname: string) => Object.values(SCREENS).find((s) => routeRe(s.route).test(pathname))
