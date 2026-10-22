@@ -1,0 +1,19 @@
+{
+  "v": 1,
+  "id": "c_02",
+  "ts": "2026-10-22T03:13:02+07:00",
+  "type": "tool_result",
+  "channel": null,
+  "payload": {
+    "run_id": "run_01",
+    "step_id": "st_06",
+    "call_id": "call_3a9",
+    "tool": "decrypt_records",
+    "ok": false,
+    "error": {
+      "code": "tide_refused",
+      "missing_role": "_tide_customer_pii.selfdecrypt",
+      "raw": "<message gốc SDK ném ra — CẦN KIỂM CHỨNG format>"
+    }
+  }
+}

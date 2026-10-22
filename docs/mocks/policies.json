@@ -1,0 +1,118 @@
+{
+  "version": "v7",
+  "tiers": {
+    "T0": {
+      "label": "Auto",
+      "required": 0,
+      "of": 0,
+      "max_duration_min": null,
+      "eligible": [],
+      "examples": [
+        "services.restart",
+        "deploy.rollback",
+        "metrics.read",
+        "logs.read"
+      ]
+    },
+    "T1": {
+      "label": "1-of-2",
+      "required": 1,
+      "of": 2,
+      "max_duration_min": null,
+      "eligible": [
+        "oncall",
+        "security-lead"
+      ],
+      "examples": [
+        "deploy.hotfix",
+        "scale.up"
+      ]
+    },
+    "T2": {
+      "label": "2-of-3",
+      "required": 2,
+      "of": 3,
+      "max_duration_min": 30,
+      "eligible": [
+        "oncall",
+        "security-lead",
+        "platform-admin"
+      ],
+      "examples": [
+        "customer_pii.selfdecrypt"
+      ]
+    },
+    "T3": {
+      "label": "3-of-3",
+      "required": 3,
+      "of": 3,
+      "max_duration_min": null,
+      "eligible": [
+        "oncall",
+        "security-lead",
+        "platform-admin"
+      ],
+      "examples": [
+        "roles.grant",
+        "secrets.rotate",
+        "policy.edit",
+        "audit.write"
+      ]
+    }
+  },
+  "capability_tier": {
+    "services.restart": "T0",
+    "deploy.rollback": "T0",
+    "metrics.read": "T0",
+    "logs.read": "T0",
+    "deploy.hotfix": "T1",
+    "scale.up": "T1",
+    "customer_pii.selfdecrypt": "T2",
+    "roles.grant": "T3",
+    "secrets.rotate": "T3",
+    "policy.edit": "T3",
+    "audit.write": "T3"
+  },
+  "escalation": [
+    {
+      "rule": "injection_in_agent_context",
+      "effect": "+1 tier (cap T3) + flag security_review",
+      "label": "+1 tier if prompt injection detected in agent context"
+    },
+    {
+      "rule": "outside_incident_window",
+      "effect": "+1 tier (cap T3)",
+      "label": "+1 tier outside incident window"
+    },
+    {
+      "rule": "agent_never_holds",
+      "capabilities": [
+        "roles.grant"
+      ],
+      "label": "Agents can never hold roles.grant"
+    },
+    {
+      "rule": "requester_cannot_approve",
+      "label": "Requester cannot approve own request"
+    }
+  ],
+  "signed_by": [
+    {
+      "username": "marcus.lee",
+      "display_name": "Marcus Lee"
+    },
+    {
+      "username": "linh.tran",
+      "display_name": "Linh Tran"
+    },
+    {
+      "username": "dave.kim",
+      "display_name": "Dave Kim"
+    }
+  ],
+  "hash": "sha256:c0de…77f1",
+  "signature": "sig:a1b2…99e3 (14/20 ORK)",
+  "created_at": "2026-10-15T10:00:00+07:00",
+  "edit_note": "Policy changes are themselves T3 — requires 3 of 3 signatures.",
+  "principle": "Reducing authority is instant. Increasing authority requires quorum."
+}

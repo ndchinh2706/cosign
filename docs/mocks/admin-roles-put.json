@@ -1,0 +1,100 @@
+{
+  "code": "quorum_required",
+  "message": "No roles changed. TideCloak cannot apply role changes without threshold signatures.",
+  "request": {
+    "id": "CR-0195",
+    "type": "grant_role",
+    "status": "pending",
+    "requester": {
+      "username": "dave.kim",
+      "display_name": "Dave Kim",
+      "type": "human"
+    },
+    "target_user": "ai-oncall-agent",
+    "capability": "roles.grant",
+    "roles": [
+      "realm-admin",
+      "_tide_customer_pii.selfdecrypt"
+    ],
+    "scope": {
+      "roles": [
+        "realm-admin",
+        "_tide_customer_pii.selfdecrypt"
+      ],
+      "count": 2
+    },
+    "duration_min": null,
+    "justification": "Edit roles · ai-oncall-agent (admin console)",
+    "evidence": {},
+    "base_tier": "T3",
+    "tier": "T3",
+    "escalated": false,
+    "escalation_reason": null,
+    "quorum": {
+      "required": 3,
+      "of": 3,
+      "approvals": 0,
+      "eligible": [
+        {
+          "username": "linh.tran",
+          "display_name": "Linh Tran",
+          "role": "oncall"
+        },
+        {
+          "username": "marcus.lee",
+          "display_name": "Marcus Lee",
+          "role": "security-lead"
+        },
+        {
+          "username": "dave.kim",
+          "display_name": "Dave Kim",
+          "role": "platform-admin"
+        }
+      ],
+      "signed_by": [],
+      "requester_cannot_approve": true
+    },
+    "safety_checks": [
+      {
+        "id": "agent_never_holds",
+        "label": "Agents can never hold roles.grant",
+        "status": "fail"
+      },
+      {
+        "id": "scope",
+        "label": "Scope limited to incident records",
+        "status": "fail",
+        "detail": "unscoped"
+      },
+      {
+        "id": "requester_cannot_approve",
+        "label": "Your approval is not counted on your own request",
+        "status": "info"
+      }
+    ],
+    "flags": [
+      "admin_role_edit",
+      "agent_target"
+    ],
+    "security_context": {
+      "why_flagged": "Admin attempted to grant realm-admin and customer_pii.selfdecrypt to an agent identity without quorum",
+      "blast_radius": {
+        "customer_records": 48201,
+        "could": [
+          "agent reads all customer records",
+          "agent grants roles",
+          "agent exports data"
+        ]
+      }
+    },
+    "incident_id": "INC-2417",
+    "run_id": null,
+    "tide_cr_id": "mock-cr-0195",
+    "signature": null,
+    "created_at": "2026-10-22T03:20:10+07:00",
+    "decided_at": null,
+    "granted_at": null,
+    "expires_at": null,
+    "age_s": 5
+  }
+}

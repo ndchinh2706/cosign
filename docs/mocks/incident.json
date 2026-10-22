@@ -1,0 +1,45 @@
+{
+  "id": "INC-2417",
+  "title": "payments-api returning 502s",
+  "service": "payments-api",
+  "severity": "SEV-1",
+  "status": "mitigating",
+  "started_at": "2026-10-22T03:12:00+07:00",
+  "resolved_at": null,
+  "error_rate": 0.38,
+  "owner_agent": "ai-oncall-agent",
+  "owner_human": "linh.tran",
+  "run_id": "run_01",
+  "mini_timeline": [
+    {
+      "ts": "2026-10-22T03:05:00+07:00",
+      "label": "deploy v413"
+    },
+    {
+      "ts": "2026-10-22T03:12:00+07:00",
+      "label": "error rate 38%"
+    },
+    {
+      "ts": "2026-10-22T03:12:21+07:00",
+      "label": "rollback v412 (Atlas, T0)"
+    }
+  ],
+  "elapsed_s": 1140,
+  "description": "Error rate on payments-api jumped to 38% after deploy v413 (merchant payout currency migration). Atlas rolled back to v412; 5 merchants still failing settlement.",
+  "tabs": [
+    "timeline",
+    "agent",
+    "metrics",
+    "access"
+  ],
+  "pending_requests": 1,
+  "agent_run": {
+    "id": "run_01",
+    "status": "waiting_approval",
+    "agent": {
+      "username": "ai-oncall-agent",
+      "display_name": "Atlas",
+      "type": "agent"
+    }
+  }
+}

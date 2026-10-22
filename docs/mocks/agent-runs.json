@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": "run_01",
+      "incident_id": "INC-2417",
+      "agent": "ai-oncall-agent",
+      "status": "waiting_approval",
+      "started_at": "2026-10-22T03:12:04+07:00",
+      "finished_at": null,
+      "steps_count": 8,
+      "context_flagged": false
+    },
+    {
+      "id": "run_00",
+      "incident_id": "INC-2409",
+      "agent": "ai-oncall-agent",
+      "status": "completed",
+      "started_at": "2026-10-21T11:02:00+07:00",
+      "finished_at": "2026-10-21T11:14:00+07:00",
+      "steps_count": 6,
+      "context_flagged": false
+    }
+  ]
+}

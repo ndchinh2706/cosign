@@ -1,0 +1,66 @@
+{
+  "items": [
+    {
+      "username": "ai-oncall-agent",
+      "display_name": "Atlas",
+      "type": "agent",
+      "roles": [
+        "agent",
+        "_tide_customer_pii.selfencrypt"
+      ],
+      "last_login": "2026-10-22T03:12:01+07:00",
+      "pending_requests": [
+        "CR-0192",
+        "CR-0193",
+        "CR-0195"
+      ]
+    },
+    {
+      "username": "linh.tran",
+      "display_name": "Linh Tran",
+      "type": "human",
+      "roles": [
+        "oncall",
+        "tide-realm-admin"
+      ],
+      "last_login": "2026-10-22T03:14:50+07:00",
+      "pending_requests": []
+    },
+    {
+      "username": "marcus.lee",
+      "display_name": "Marcus Lee",
+      "type": "human",
+      "roles": [
+        "security-lead",
+        "tide-realm-admin",
+        "_tide_customer_pii.selfencrypt",
+        "_tide_customer_pii.selfdecrypt"
+      ],
+      "last_login": "2026-10-22T03:15:55+07:00",
+      "pending_requests": []
+    },
+    {
+      "username": "dave.kim",
+      "display_name": "Dave Kim",
+      "type": "human",
+      "roles": [
+        "platform-admin",
+        "tide-realm-admin"
+      ],
+      "last_login": "2026-10-22T03:19:30+07:00",
+      "pending_requests": [
+        "CR-0194"
+      ]
+    },
+    {
+      "username": "priya.nair",
+      "display_name": "Priya Nair",
+      "type": "human",
+      "roles": [
+        "compliance"
+      ],
+      "last_login": "2026-10-21T17:40:00+07:00",
+      "pending_requests": []
+    }
+  ]
+}

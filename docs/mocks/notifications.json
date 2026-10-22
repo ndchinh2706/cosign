@@ -1,0 +1,60 @@
+{
+  "unread": 3,
+  "groups": [
+    {
+      "id": "approval",
+      "label": "Needs your approval",
+      "items": [
+        {
+          "id": "ntf_01",
+          "group": "approval",
+          "title": "Atlas requests customer_pii.selfdecrypt · 5 records · 15 min",
+          "body": "INC-2417 · T2 · 2-of-3",
+          "request_id": "CR-0192",
+          "requester": {
+            "username": "ai-oncall-agent",
+            "display_name": "Atlas",
+            "type": "agent"
+          },
+          "tier": "T2",
+          "approvals": 0,
+          "required": 2,
+          "read": false,
+          "ts": "2026-10-22T03:13:10+07:00"
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "label": "Agent activity",
+      "items": [
+        {
+          "id": "ntf_02",
+          "group": "agent",
+          "title": "Atlas rolled back payments-api to v412",
+          "body": "T0 · auto-approved by policy · error rate 38% → 4%",
+          "request_id": null,
+          "run_id": "run_01",
+          "read": false,
+          "ts": "2026-10-22T03:12:21+07:00"
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "label": "Security",
+      "items": [
+        {
+          "id": "ntf_03",
+          "group": "security",
+          "title": "Suspected prompt injection in Atlas context",
+          "body": "PROMPT_INJECTION · 0.97 · fr · all new requests escalated +1 tier",
+          "request_id": "CR-0193",
+          "run_id": "run_01",
+          "read": false,
+          "ts": "2026-10-22T03:18:20+07:00"
+        }
+      ]
+    }
+  ]
+}

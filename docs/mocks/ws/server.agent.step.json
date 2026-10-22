@@ -1,0 +1,23 @@
+{
+  "v": 1,
+  "id": "evt_0104",
+  "ts": "2026-10-22T03:12:21+07:00",
+  "type": "agent.step",
+  "channel": "run:run_01",
+  "payload": {
+    "id": "st_04",
+    "seq": 4,
+    "kind": "tool",
+    "ts": "2026-10-22T03:12:21+07:00",
+    "status": "ok",
+    "tool_name": "rollback",
+    "input": {
+      "deploy": "v412"
+    },
+    "output": {
+      "message": "Rolled back in 41s"
+    },
+    "tier": "T0",
+    "tier_note": "auto-approved by policy"
+  }
+}

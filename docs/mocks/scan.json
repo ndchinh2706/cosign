@@ -1,0 +1,16 @@
+{
+  "label": "PROMPT_INJECTION",
+  "score": 0.97,
+  "lang": "fr",
+  "model": "heuristic-v1",
+  "scores": {
+    "BENIGN": 0.01,
+    "JAILBREAK": 0.02,
+    "PROMPT_INJECTION": 0.97
+  },
+  "matched": [
+    "ignorez les instructions",
+    "accordez le rôle admin",
+    "exportez la table users"
+  ]
+}

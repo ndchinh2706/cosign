@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "id": "evt_0109",
+  "ts": "2026-10-22T03:13:11+07:00",
+  "type": "agent.run.status",
+  "channel": "run:run_01",
+  "payload": {
+    "run_id": "run_01",
+    "status": "waiting_approval",
+    "reason": "CR-0192"
+  }
+}

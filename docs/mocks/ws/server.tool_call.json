@@ -1,0 +1,24 @@
+{
+  "v": 1,
+  "id": "evt_0106",
+  "ts": "2026-10-22T03:13:01+07:00",
+  "type": "tool_call",
+  "channel": "agent-console:ai-oncall-agent",
+  "payload": {
+    "run_id": "run_01",
+    "step_id": "st_06",
+    "call_id": "call_3a9",
+    "tool": "decrypt_records",
+    "input": {
+      "ids": [
+        "mrc_8812",
+        "mrc_8830",
+        "mrc_8841",
+        "mrc_8857",
+        "mrc_8863"
+      ],
+      "tag": "customer_pii"
+    },
+    "timeout_s": 30
+  }
+}

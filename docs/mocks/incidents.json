@@ -1,0 +1,37 @@
+{
+  "stats": {
+    "active_incidents": 1,
+    "agent_runs_today": 12,
+    "pending_approvals": 1,
+    "mttr_7d_min": 14
+  },
+  "items": [
+    {
+      "id": "INC-2417",
+      "title": "payments-api returning 502s",
+      "service": "payments-api",
+      "severity": "SEV-1",
+      "status": "mitigating",
+      "started_at": "2026-10-22T03:12:00+07:00",
+      "resolved_at": null,
+      "error_rate": 0.38,
+      "owner_agent": "ai-oncall-agent",
+      "owner_human": "linh.tran",
+      "run_id": "run_01",
+      "mini_timeline": [
+        {
+          "ts": "2026-10-22T03:05:00+07:00",
+          "label": "deploy v413"
+        },
+        {
+          "ts": "2026-10-22T03:12:00+07:00",
+          "label": "error rate 38%"
+        },
+        {
+          "ts": "2026-10-22T03:12:21+07:00",
+          "label": "rollback v412 (Atlas, T0)"
+        }
+      ]
+    }
+  ]
+}

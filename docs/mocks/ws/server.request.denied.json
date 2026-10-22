@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "id": "evt_0130",
+  "ts": "2026-10-22T03:21:00+07:00",
+  "type": "request.denied",
+  "channel": "role:security-lead",
+  "payload": {
+    "id": "CR-0193",
+    "reason": "Injection-driven request. Agent context quarantined.",
+    "by": "marcus.lee",
+    "quarantined": true
+  }
+}

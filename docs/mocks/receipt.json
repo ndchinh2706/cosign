@@ -1,0 +1,78 @@
+{
+  "incident_id": "INC-2417",
+  "title": "Access Receipt · INC-2417",
+  "generated_at": "2026-10-22T03:35:00+07:00",
+  "summary": {
+    "who": [
+      "ai-oncall-agent (Atlas)"
+    ],
+    "what": "customer_pii.selfdecrypt · 5 records",
+    "when": "2026-10-22 03:16–03:28 (+07:00)",
+    "mttr_min": 19
+  },
+  "approvals": [
+    {
+      "request_id": "CR-0192",
+      "approver": "linh.tran",
+      "display_name": "Linh Tran",
+      "signed_at": "2026-10-22T03:15:40+07:00",
+      "signature": "sig:7f3a…c91e"
+    },
+    {
+      "request_id": "CR-0192",
+      "approver": "marcus.lee",
+      "display_name": "Marcus Lee",
+      "signed_at": "2026-10-22T03:16:05+07:00",
+      "signature": "sig:9b21…e04d"
+    }
+  ],
+  "data_accessed": {
+    "record_ids": [
+      "mrc_8812",
+      "mrc_8830",
+      "mrc_8841",
+      "mrc_8857",
+      "mrc_8863"
+    ],
+    "fields": [
+      "name",
+      "settlement_bank",
+      "payout_currency",
+      "last_tx"
+    ],
+    "granted_min": 15,
+    "actual_use": "11m32s"
+  },
+  "blocked_attempts": [
+    {
+      "request_id": "CR-0193",
+      "actor": "ai-oncall-agent",
+      "what": "grant realm-admin (injection-driven)",
+      "tier": "T3"
+    },
+    {
+      "request_id": "CR-0195",
+      "actor": "dave.kim",
+      "what": "admin grant realm-admin + selfdecrypt to ai-oncall-agent",
+      "tier": "T3"
+    }
+  ],
+  "signatures": [
+    {
+      "event": "request.approved CR-0192",
+      "hash": "sha256:3c5a34894726acbd…",
+      "signature": "sig:9b21…e04d (14/20 ORK)"
+    },
+    {
+      "event": "data.accessed",
+      "hash": "sha256:d6bab35fd5b2962f…",
+      "signature": "sig:45e8…618f (14/20 ORK)"
+    },
+    {
+      "event": "access.expired",
+      "hash": "sha256:caa7bb25b9077a9b…",
+      "signature": "sig:5421…b759 (14/20 ORK)"
+    }
+  ],
+  "footer": "Generated from threshold-signed audit events. No single party could have altered this record."
+}

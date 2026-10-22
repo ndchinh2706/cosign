@@ -1,0 +1,22 @@
+{
+  "id": "ae_0007",
+  "ts": "2026-10-22T03:13:02+07:00",
+  "actor": "ai-oncall-agent",
+  "actor_type": "agent",
+  "action": "decrypt_records",
+  "target": "customer_pii:mrc_8812,mrc_8830,mrc_8841,mrc_8857,mrc_8863",
+  "outcome": "refused",
+  "incident_id": "INC-2417",
+  "request_id": null,
+  "payload": {
+    "missing_role": "_tide_customer_pii.selfdecrypt",
+    "enforced_by": "tide"
+  },
+  "signers": [
+    "ork"
+  ],
+  "signature": "sig:4c1d…a9f0 (14/20 ORK)",
+  "prev_hash": "sha256:b40214bcd9bfa5f6…",
+  "hash": "sha256:daf0248097facf58…",
+  "verified": true
+}

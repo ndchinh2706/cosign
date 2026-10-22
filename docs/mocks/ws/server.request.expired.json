@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "id": "evt_0140",
+  "ts": "2026-10-22T03:28:00+07:00",
+  "type": "request.expired",
+  "channel": "role:oncall",
+  "payload": {
+    "id": "CR-0192",
+    "expired_at": "2026-10-22T03:28:00+07:00",
+    "capability": "customer_pii.selfdecrypt",
+    "target_user": "ai-oncall-agent",
+    "actual_use": "11m32s"
+  }
+}

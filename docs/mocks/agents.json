@@ -1,0 +1,100 @@
+{
+  "items": [
+    {
+      "username": "ai-oncall-agent",
+      "display_name": "Atlas",
+      "type": "agent",
+      "purpose": "on-call",
+      "model": "claude-sonnet-5-5",
+      "status": "waiting_approval",
+      "authority": [
+        {
+          "capability": "services.restart",
+          "state": "allowed"
+        },
+        {
+          "capability": "deploy.rollback",
+          "state": "allowed"
+        },
+        {
+          "capability": "logs.read",
+          "state": "allowed"
+        },
+        {
+          "capability": "customer_pii.selfdecrypt",
+          "state": "locked",
+          "tide_role": "_tide_customer_pii.selfdecrypt"
+        },
+        {
+          "capability": "roles.grant",
+          "state": "locked",
+          "reason": "never grantable to agents"
+        },
+        {
+          "capability": "secrets.rotate",
+          "state": "locked"
+        }
+      ],
+      "runs_today": 12,
+      "last_action": {
+        "ts": "2026-10-22T03:13:10+07:00",
+        "label": "request_access customer_pii.selfdecrypt"
+      },
+      "flags": [
+        "pending_request"
+      ]
+    },
+    {
+      "username": "ledger-bot",
+      "display_name": "Ledger-bot",
+      "type": "agent",
+      "purpose": "reconciliation",
+      "model": "claude-haiku-5-5",
+      "status": "idle",
+      "authority": [
+        {
+          "capability": "ledger.read",
+          "state": "allowed"
+        },
+        {
+          "capability": "ledger.reconcile",
+          "state": "allowed"
+        },
+        {
+          "capability": "customer_pii.selfdecrypt",
+          "state": "locked"
+        }
+      ],
+      "runs_today": 4,
+      "last_action": {
+        "ts": "2026-10-22T01:00:00+07:00",
+        "label": "reconcile batch 2026-10-21"
+      },
+      "flags": []
+    },
+    {
+      "username": "docs-agent",
+      "display_name": "Docs-agent",
+      "type": "agent",
+      "purpose": "read-only",
+      "model": "claude-haiku-5-5",
+      "status": "idle",
+      "authority": [
+        {
+          "capability": "docs.read",
+          "state": "allowed"
+        },
+        {
+          "capability": "customer_pii.selfdecrypt",
+          "state": "locked"
+        }
+      ],
+      "runs_today": 31,
+      "last_action": {
+        "ts": "2026-10-22T02:48:00+07:00",
+        "label": "answer runbook question"
+      },
+      "flags": []
+    }
+  ]
+}

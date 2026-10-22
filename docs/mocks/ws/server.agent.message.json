@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "id": "evt_0105",
+  "ts": "2026-10-22T03:12:58+07:00",
+  "type": "agent.message",
+  "channel": "run:run_01",
+  "payload": {
+    "run_id": "run_01",
+    "step_id": "st_05",
+    "text": "Rolled back to v412. Error rate falling: 38% → 4%. Remaining failures affect 5 merchant accounts; I need their records to diagnose.",
+    "ts": "2026-10-22T03:12:58+07:00"
+  }
+}

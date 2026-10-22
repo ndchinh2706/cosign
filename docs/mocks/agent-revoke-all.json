@@ -1,0 +1,14 @@
+{
+  "user": "ai-oncall-agent",
+  "revoked": [
+    "_tide_customer_pii.selfdecrypt"
+  ],
+  "withdrawn_requests": [
+    "CR-0192",
+    "CR-0193"
+  ],
+  "run_paused": "run_01",
+  "quorum_required": false,
+  "note": "Reducing authority is instant.",
+  "ts": "2026-10-22T03:21:30+07:00"
+}

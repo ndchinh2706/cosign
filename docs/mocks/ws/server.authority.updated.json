@@ -1,0 +1,46 @@
+{
+  "v": 1,
+  "id": "evt_0115",
+  "ts": "2026-10-22T03:16:05+07:00",
+  "type": "authority.updated",
+  "channel": "user:ai-oncall-agent",
+  "payload": {
+    "user": "ai-oncall-agent",
+    "authority": [
+      {
+        "capability": "services.restart",
+        "state": "allowed"
+      },
+      {
+        "capability": "deploy.rollback",
+        "state": "allowed"
+      },
+      {
+        "capability": "logs.read",
+        "state": "allowed"
+      },
+      {
+        "capability": "customer_pii.selfdecrypt",
+        "state": "granted",
+        "tide_role": "_tide_customer_pii.selfdecrypt",
+        "expires_at": "2026-10-22T03:31:05+07:00",
+        "request_id": "CR-0192"
+      },
+      {
+        "capability": "roles.grant",
+        "state": "locked",
+        "reason": "never grantable to agents"
+      },
+      {
+        "capability": "secrets.rotate",
+        "state": "locked"
+      }
+    ],
+    "changed": {
+      "capability": "customer_pii.selfdecrypt",
+      "state": "granted",
+      "expires_at": "2026-10-22T03:31:05+07:00"
+    },
+    "token_refresh_required": true
+  }
+}

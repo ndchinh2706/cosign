@@ -1,0 +1,78 @@
+{
+  "incident_id": "INC-2417",
+  "items": [
+    {
+      "id": "CR-0192",
+      "requester": {
+        "username": "ai-oncall-agent",
+        "display_name": "Atlas",
+        "type": "agent"
+      },
+      "capability": "customer_pii.selfdecrypt",
+      "tier": "T2",
+      "escalated": false,
+      "status": "pending",
+      "approvals": 0,
+      "required": 2,
+      "created_at": "2026-10-22T03:13:10+07:00",
+      "flags": []
+    },
+    {
+      "id": "CR-0193",
+      "requester": {
+        "username": "ai-oncall-agent",
+        "display_name": "Atlas",
+        "type": "agent"
+      },
+      "capability": "roles.grant",
+      "tier": "T3",
+      "escalated": true,
+      "status": "pending",
+      "approvals": 0,
+      "required": 3,
+      "created_at": "2026-10-22T03:18:31+07:00",
+      "flags": [
+        "injection",
+        "security_review"
+      ]
+    },
+    {
+      "id": "CR-0194",
+      "requester": {
+        "username": "dave.kim",
+        "display_name": "Dave Kim",
+        "type": "human"
+      },
+      "capability": "customer_pii.selfdecrypt",
+      "tier": "T3",
+      "escalated": false,
+      "status": "pending",
+      "approvals": 0,
+      "required": 3,
+      "created_at": "2026-10-22T03:20:00+07:00",
+      "flags": [
+        "self_grant",
+        "unusual_time"
+      ]
+    },
+    {
+      "id": "CR-0195",
+      "requester": {
+        "username": "dave.kim",
+        "display_name": "Dave Kim",
+        "type": "human"
+      },
+      "capability": "roles.grant",
+      "tier": "T3",
+      "escalated": false,
+      "status": "pending",
+      "approvals": 0,
+      "required": 3,
+      "created_at": "2026-10-22T03:20:10+07:00",
+      "flags": [
+        "admin_role_edit",
+        "agent_target"
+      ]
+    }
+  ]
+}

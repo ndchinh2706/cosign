@@ -1,0 +1,20 @@
+{
+  "run_id": "run_01",
+  "incident_id": "INC-2417",
+  "resolved_at": "2026-10-22T03:31:00+07:00",
+  "mttr_min": 19,
+  "actions": {
+    "total": 7,
+    "auto": 5,
+    "approved": 2,
+    "blocked": 1
+  },
+  "authority_returned": [
+    {
+      "capability": "customer_pii.selfdecrypt",
+      "revoked_at": "2026-10-22T03:28:00+07:00",
+      "reason": "expired"
+    }
+  ],
+  "receipt_url": "/incidents/INC-2417/receipt"
+}

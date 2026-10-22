@@ -1,0 +1,32 @@
+{
+  "v": 1,
+  "id": "evt_0114",
+  "ts": "2026-10-22T03:16:05+07:00",
+  "type": "request.approved",
+  "channel": "role:oncall",
+  "payload": {
+    "id": "CR-0192",
+    "signature": "sig:9b21…e04d",
+    "ork_nodes": "14/20",
+    "signed_by": [
+      {
+        "username": "linh.tran",
+        "display_name": "Linh Tran",
+        "signed_at": "2026-10-22T03:15:40+07:00",
+        "signature": "sig:7f3a…c91e",
+        "ork_nodes": "14/20"
+      },
+      {
+        "username": "marcus.lee",
+        "display_name": "Marcus Lee",
+        "signed_at": "2026-10-22T03:16:05+07:00",
+        "signature": "sig:9b21…e04d",
+        "ork_nodes": "14/20"
+      }
+    ],
+    "granted_at": "2026-10-22T03:16:05+07:00",
+    "expires_at": "2026-10-22T03:31:05+07:00",
+    "capability": "customer_pii.selfdecrypt",
+    "target_user": "ai-oncall-agent"
+  }
+}

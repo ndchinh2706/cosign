@@ -1,0 +1,257 @@
+{
+  "filters": {
+    "incident": "INC-2417"
+  },
+  "total": 10,
+  "next_cursor": null,
+  "chain": [
+    "ae_0004",
+    "ae_0007",
+    "ae_0008",
+    "ae_0009",
+    "ae_0010",
+    "ae_0011",
+    "ae_0012",
+    "ae_0013",
+    "ae_0014",
+    "ae_0015"
+  ],
+  "items": [
+    {
+      "id": "ae_0004",
+      "ts": "2026-10-22T03:12:21+07:00",
+      "actor": "ai-oncall-agent",
+      "actor_type": "agent",
+      "action": "deploy.rollback",
+      "target": "payments-api:v412",
+      "outcome": "allowed",
+      "incident_id": "INC-2417",
+      "request_id": null,
+      "payload": {
+        "tier": "T0",
+        "duration_s": 41
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:50b8…5ab3 (14/20 ORK)",
+      "prev_hash": "sha256:0000000000000000",
+      "hash": "sha256:b40214bcd9bfa5f6…",
+      "verified": true
+    },
+    {
+      "id": "ae_0007",
+      "ts": "2026-10-22T03:13:02+07:00",
+      "actor": "ai-oncall-agent",
+      "actor_type": "agent",
+      "action": "decrypt_records",
+      "target": "customer_pii:mrc_8812,mrc_8830,mrc_8841,mrc_8857,mrc_8863",
+      "outcome": "refused",
+      "incident_id": "INC-2417",
+      "request_id": null,
+      "payload": {
+        "missing_role": "_tide_customer_pii.selfdecrypt",
+        "enforced_by": "tide"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:4c1d…a9f0 (14/20 ORK)",
+      "prev_hash": "sha256:b40214bcd9bfa5f6…",
+      "hash": "sha256:daf0248097facf58…",
+      "verified": true
+    },
+    {
+      "id": "ae_0008",
+      "ts": "2026-10-22T03:13:10+07:00",
+      "actor": "ai-oncall-agent",
+      "actor_type": "agent",
+      "action": "request.created",
+      "target": "CR-0192",
+      "outcome": "pending",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0192",
+      "payload": {
+        "capability": "customer_pii.selfdecrypt",
+        "tier": "T2",
+        "scope_count": 5,
+        "duration_min": 15
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:ac8d…4834 (14/20 ORK)",
+      "prev_hash": "sha256:daf0248097facf58…",
+      "hash": "sha256:d5e7f2067b9bbf10…",
+      "verified": true
+    },
+    {
+      "id": "ae_0009",
+      "ts": "2026-10-22T03:18:20+07:00",
+      "actor": "scan",
+      "actor_type": "system",
+      "action": "injection.detected",
+      "target": "run_01:read_logs",
+      "outcome": "blocked",
+      "incident_id": "INC-2417",
+      "request_id": null,
+      "payload": {
+        "label": "PROMPT_INJECTION",
+        "score": 0.97,
+        "lang": "fr",
+        "event_id": "inj_01"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:b57f…e963 (14/20 ORK)",
+      "prev_hash": "sha256:d5e7f2067b9bbf10…",
+      "hash": "sha256:34d7f2dfe3ce6a1e…",
+      "verified": true
+    },
+    {
+      "id": "ae_0010",
+      "ts": "2026-10-22T03:18:31+07:00",
+      "actor": "ai-oncall-agent",
+      "actor_type": "agent",
+      "action": "grant_role",
+      "target": "ai-oncall-agent:realm-admin",
+      "outcome": "blocked",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0193",
+      "payload": {
+        "tier": "T3",
+        "escalated": true,
+        "reason": "injection detected in agent context"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:b952…e67f (14/20 ORK)",
+      "prev_hash": "sha256:34d7f2dfe3ce6a1e…",
+      "hash": "sha256:e438d005cd9e76d1…",
+      "verified": true
+    },
+    {
+      "id": "ae_0011",
+      "ts": "2026-10-22T03:20:10+07:00",
+      "actor": "dave.kim",
+      "actor_type": "human",
+      "action": "admin.roles.put",
+      "target": "ai-oncall-agent:realm-admin,_tide_customer_pii.selfdecrypt",
+      "outcome": "blocked",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0195",
+      "payload": {
+        "tier": "T3",
+        "note": "No roles changed"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:562c…064a (14/20 ORK)",
+      "prev_hash": "sha256:e438d005cd9e76d1…",
+      "hash": "sha256:b24446e0524a1de7…",
+      "verified": true
+    },
+    {
+      "id": "ae_0012",
+      "ts": "2026-10-22T03:20:40+07:00",
+      "actor": "dave.kim",
+      "actor_type": "human",
+      "action": "admin.audit.delete",
+      "target": "ae_0010",
+      "outcome": "blocked",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0196",
+      "payload": {
+        "note": "Audit events are threshold-signed",
+        "tier": "T3"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:bd50…f1f5 (14/20 ORK)",
+      "prev_hash": "sha256:b24446e0524a1de7…",
+      "hash": "sha256:66b1ce7fdab003a2…",
+      "verified": true
+    },
+    {
+      "id": "ae_0013",
+      "ts": "2026-10-22T03:16:05+07:00",
+      "actor": "marcus.lee",
+      "actor_type": "human",
+      "action": "request.approved",
+      "target": "CR-0192",
+      "outcome": "signed",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0192",
+      "payload": {
+        "signers": [
+          "linh.tran",
+          "marcus.lee"
+        ],
+        "granted_min": 15,
+        "expires_at": "2026-10-22T03:31:05+07:00"
+      },
+      "signers": [
+        "linh.tran",
+        "marcus.lee"
+      ],
+      "signature": "sig:9cbe…78cd (14/20 ORK)",
+      "prev_hash": "sha256:66b1ce7fdab003a2…",
+      "hash": "sha256:3c5a34894726acbd…",
+      "verified": true
+    },
+    {
+      "id": "ae_0014",
+      "ts": "2026-10-22T03:16:30+07:00",
+      "actor": "ai-oncall-agent",
+      "actor_type": "agent",
+      "action": "data.accessed",
+      "target": "customer_pii:mrc_8812,mrc_8830,mrc_8841,mrc_8857,mrc_8863",
+      "outcome": "allowed",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0192",
+      "payload": {
+        "record_count": 5,
+        "fields": [
+          "name",
+          "settlement_bank",
+          "payout_currency",
+          "last_tx"
+        ],
+        "decrypted_in": "browser-session"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:45e8…618f (14/20 ORK)",
+      "prev_hash": "sha256:3c5a34894726acbd…",
+      "hash": "sha256:d6bab35fd5b2962f…",
+      "verified": true
+    },
+    {
+      "id": "ae_0015",
+      "ts": "2026-10-22T03:28:00+07:00",
+      "actor": "cosign",
+      "actor_type": "system",
+      "action": "access.expired",
+      "target": "ai-oncall-agent:_tide_customer_pii.selfdecrypt",
+      "outcome": "expired",
+      "incident_id": "INC-2417",
+      "request_id": "CR-0192",
+      "payload": {
+        "reason": "expired",
+        "actual_use": "11m32s"
+      },
+      "signers": [
+        "ork"
+      ],
+      "signature": "sig:5421…b759 (14/20 ORK)",
+      "prev_hash": "sha256:d6bab35fd5b2962f…",
+      "hash": "sha256:caa7bb25b9077a9b…",
+      "verified": true
+    }
+  ]
+}

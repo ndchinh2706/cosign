@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": "tide_refused",
+    "message": "Audit events are threshold-signed. Deletion requires T3 quorum and is itself recorded.",
+    "details": {
+      "request_id": "CR-0196",
+      "tier": "T3",
+      "required": 3,
+      "recorded_as": "ae_0012"
+    }
+  }
+}

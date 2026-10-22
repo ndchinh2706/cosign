@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "id": "evt_0000",
+  "ts": "2026-10-22T03:12:01+07:00",
+  "type": "auth_ok",
+  "channel": null,
+  "payload": {
+    "user": "linh.tran",
+    "channels": [
+      "user:linh.tran",
+      "role:oncall",
+      "global"
+    ]
+  }
+}

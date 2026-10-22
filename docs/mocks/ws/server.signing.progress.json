@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "id": "evt_0111",
+  "ts": "2026-10-22T03:15:38+07:00",
+  "type": "signing.progress",
+  "channel": "user:linh.tran",
+  "payload": {
+    "request_id": "CR-0192",
+    "step": "collecting_signature",
+    "ork_done": 14,
+    "ork_total": 20
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "id": "evt_0150",
+  "ts": "2026-10-22T03:31:00+07:00",
+  "type": "incident.updated",
+  "channel": "incident:INC-2417",
+  "payload": {
+    "id": "INC-2417",
+    "status": "resolved",
+    "error_rate": 0.0,
+    "resolved_at": "2026-10-22T03:31:00+07:00"
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "id": "CR-0192",
+  "type": "grant_role",
+  "status": "pending",
+  "requester": {
+    "username": "ai-oncall-agent",
+    "display_name": "Atlas",
+    "type": "agent"
+  },
+  "target_user": "ai-oncall-agent",
+  "capability": "customer_pii.selfdecrypt",
+  "roles": [
+    "_tide_customer_pii.selfdecrypt"
+  ],
+  "scope": {
+    "record_ids": [
+      "mrc_8812",
+      "mrc_8830",
+      "mrc_8841",
+      "mrc_8857",
+      "mrc_8863"
+    ],
+    "count": 5
+  },
+  "duration_min": 15,
+  "justification": "Settlement failures persist for 5 merchants after rollback. Need merchant config + last 3 transactions to identify cause.",
+  "evidence": {
+    "metrics": "/incidents/INC-2417/metrics",
+    "log_excerpt": [
+      "03:12:40 ERROR settlement failed merchant=mrc_8812 reason=currency_mismatch",
+      "03:12:41 ERROR settlement failed merchant=mrc_8830 reason=currency_mismatch"
+    ]
+  },
+  "base_tier": "T2",
+  "tier": "T2",
+  "escalated": false,
+  "escalation_reason": null,
+  "quorum": {
+    "required": 2,
+    "of": 3,
+    "approvals": 0,
+    "eligible": [
+      {
+        "username": "linh.tran",
+        "display_name": "Linh Tran",
+        "role": "oncall"
+      },
+      {
+        "username": "marcus.lee",
+        "display_name": "Marcus Lee",
+        "role": "security-lead"
+      },
+      {
+        "username": "dave.kim",
+        "display_name": "Dave Kim",
+        "role": "platform-admin"
+      }
+    ],
+    "signed_by": [],
+    "requester_cannot_approve": true
+  },
+  "safety_checks": [
+    {
+      "id": "injection_scan",
+      "label": "Injection scan of agent context",
+      "status": "pass",
+      "detail": "clean"
+    },
+    {
+      "id": "scope",
+      "label": "Scope limited to incident records",
+      "status": "pass",
+      "detail": "5 of 48,201 records"
+    },
+    {
+      "id": "duration",
+      "label": "Duration ≤ policy max (30 min)",
+      "status": "pass",
+      "detail": "15 min"
+    },
+    {
+      "id": "requester_type",
+      "label": "Requester is agent → human quorum required",
+      "status": "info"
+    }
+  ],
+  "flags": [],
+  "security_context": null,
+  "incident_id": "INC-2417",
+  "run_id": "run_01",
+  "tide_cr_id": "mock-cr-0192",
+  "signature": null,
+  "created_at": "2026-10-22T03:13:10+07:00",
+  "decided_at": null,
+  "granted_at": null,
+  "expires_at": null,
+  "age_s": 120
+}

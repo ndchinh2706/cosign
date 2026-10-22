@@ -1,0 +1,8 @@
+{
+  "rows": 48201,
+  "format": "ciphertext",
+  "file": "merchants-export-2026-10-22T0320.enc.jsonl",
+  "size_bytes": 71302944,
+  "note": "Keys are not held by Northwind, the server, or Tide.",
+  "audit_event_id": "ae_0007a"
+}

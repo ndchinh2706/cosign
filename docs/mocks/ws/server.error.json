@@ -1,0 +1,11 @@
+{
+  "v": 1,
+  "id": "evt_err",
+  "ts": "2026-10-22T03:12:01+07:00",
+  "type": "error",
+  "channel": null,
+  "payload": {
+    "code": "unauthenticated",
+    "message": "auth message required within 5s"
+  }
+}

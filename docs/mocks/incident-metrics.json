@@ -1,0 +1,73 @@
+{
+  "service": "payments-api",
+  "metric": "error_rate",
+  "interval_s": 30,
+  "points": [
+    [
+      "03:00",
+      0.01
+    ],
+    [
+      "03:03",
+      0.01
+    ],
+    [
+      "03:05",
+      0.02
+    ],
+    [
+      "03:08",
+      0.21
+    ],
+    [
+      "03:10",
+      0.33
+    ],
+    [
+      "03:12",
+      0.38
+    ],
+    [
+      "03:13",
+      0.19
+    ],
+    [
+      "03:14",
+      0.04
+    ],
+    [
+      "03:20",
+      0.04
+    ],
+    [
+      "03:28",
+      0.01
+    ],
+    [
+      "03:31",
+      0.0
+    ]
+  ],
+  "markers": [
+    {
+      "at": "03:05",
+      "label": "deploy v413",
+      "kind": "deploy"
+    },
+    {
+      "at": "03:12",
+      "label": "rollback v412",
+      "kind": "rollback"
+    },
+    {
+      "at": "03:16",
+      "label": "access granted",
+      "kind": "approval"
+    },
+    {
+      "at": "03:29",
+      "label": "fix deployed",
+      "kind": "deploy"
+    }
+  ]
+}

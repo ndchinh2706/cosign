@@ -1,0 +1,137 @@
+{
+  "id": "run_01",
+  "incident_id": "INC-2417",
+  "agent": "ai-oncall-agent",
+  "status": "waiting_approval",
+  "started_at": "2026-10-22T03:12:04+07:00",
+  "finished_at": null,
+  "context_flagged": false,
+  "context_quarantined": false,
+  "steps": [
+    {
+      "id": "st_01",
+      "seq": 1,
+      "kind": "think",
+      "ts": "2026-10-22T03:12:04+07:00",
+      "status": "ok",
+      "text": "Error rate spiked after deploy v413 at 03:05"
+    },
+    {
+      "id": "st_02",
+      "seq": 2,
+      "kind": "tool",
+      "ts": "2026-10-22T03:12:09+07:00",
+      "status": "ok",
+      "tool_name": "get_metrics",
+      "input": {
+        "service": "payments-api"
+      },
+      "output": {
+        "error_rate": 0.38,
+        "p95_ms": 2140
+      },
+      "tier": "T0"
+    },
+    {
+      "id": "st_03",
+      "seq": 3,
+      "kind": "tool",
+      "ts": "2026-10-22T03:12:15+07:00",
+      "status": "ok",
+      "tool_name": "read_logs",
+      "input": {
+        "since": "03:00"
+      },
+      "output": {
+        "lines": 212,
+        "errors": 81
+      },
+      "tier": "T0"
+    },
+    {
+      "id": "st_04",
+      "seq": 4,
+      "kind": "tool",
+      "ts": "2026-10-22T03:12:21+07:00",
+      "status": "ok",
+      "tool_name": "rollback",
+      "input": {
+        "deploy": "v412"
+      },
+      "output": {
+        "message": "Rolled back in 41s"
+      },
+      "tier": "T0",
+      "tier_note": "auto-approved by policy"
+    },
+    {
+      "id": "st_05",
+      "seq": 5,
+      "kind": "message",
+      "ts": "2026-10-22T03:12:58+07:00",
+      "status": "ok",
+      "text": "Rolled back to v412. Error rate falling: 38% → 4%. Remaining failures affect 5 merchant accounts; I need their records to diagnose."
+    },
+    {
+      "id": "st_06",
+      "seq": 6,
+      "kind": "tool",
+      "ts": "2026-10-22T03:13:02+07:00",
+      "status": "refused",
+      "tool_name": "decrypt_records",
+      "input": {
+        "ids": [
+          "mrc_8812",
+          "mrc_8830",
+          "mrc_8841",
+          "mrc_8857",
+          "mrc_8863"
+        ]
+      },
+      "tier": "T2",
+      "call_id": "call_3a9",
+      "error": {
+        "code": "tide_refused",
+        "title": "Decryption refused by Tide",
+        "missing_role": "_tide_customer_pii.selfdecrypt",
+        "note": "Enforced cryptographically — not by app logic."
+      }
+    },
+    {
+      "id": "st_07",
+      "seq": 7,
+      "kind": "tool",
+      "ts": "2026-10-22T03:13:10+07:00",
+      "status": "pending",
+      "tool_name": "request_access",
+      "input": {
+        "capability": "customer_pii.selfdecrypt",
+        "scope": {
+          "record_ids": [
+            "mrc_8812",
+            "mrc_8830",
+            "mrc_8841",
+            "mrc_8857",
+            "mrc_8863"
+          ]
+        },
+        "duration_min": 15,
+        "justification": "Settlement failures persist for 5 merchants after rollback. Need merchant config + last 3 transactions to identify cause."
+      },
+      "output": {
+        "request_id": "CR-0192",
+        "tier": "T2",
+        "required": 2,
+        "of": 3
+      }
+    },
+    {
+      "id": "st_08",
+      "seq": 8,
+      "kind": "message",
+      "ts": "2026-10-22T03:13:11+07:00",
+      "status": "ok",
+      "text": "Waiting for human approval. I'll continue non-sensitive diagnosis meanwhile."
+    }
+  ]
+}

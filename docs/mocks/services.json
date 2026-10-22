@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "name": "payments-api",
+      "health": "degraded",
+      "error_rate": 0.04,
+      "p95_ms": 640,
+      "current_deploy": "v412",
+      "trend": "improving"
+    },
+    {
+      "name": "ledger",
+      "health": "ok",
+      "error_rate": 0.001,
+      "p95_ms": 120,
+      "current_deploy": "v208",
+      "trend": "flat"
+    },
+    {
+      "name": "auth",
+      "health": "ok",
+      "error_rate": 0.0,
+      "p95_ms": 85,
+      "current_deploy": "v97",
+      "trend": "flat"
+    }
+  ]
+}

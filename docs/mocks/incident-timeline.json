@@ -1,0 +1,146 @@
+{
+  "incident_id": "INC-2417",
+  "items": [
+    {
+      "id": "tl_01",
+      "ts": "2026-10-22T03:05:00+07:00",
+      "actor_type": "human",
+      "actor": "dave.kim",
+      "kind": "deploy",
+      "label": "Deployed v413 · merchant payout currency migration",
+      "outcome": "allowed"
+    },
+    {
+      "id": "tl_02",
+      "ts": "2026-10-22T03:12:00+07:00",
+      "actor_type": "system",
+      "actor": "monitor",
+      "kind": "alert",
+      "label": "INC-2417 opened · error rate 38%",
+      "outcome": "allowed"
+    },
+    {
+      "id": "tl_03",
+      "ts": "2026-10-22T03:12:04+07:00",
+      "actor_type": "agent",
+      "actor": "ai-oncall-agent",
+      "kind": "run",
+      "label": "Atlas started run run_01",
+      "outcome": "allowed"
+    },
+    {
+      "id": "tl_04",
+      "ts": "2026-10-22T03:12:21+07:00",
+      "actor_type": "agent",
+      "actor": "ai-oncall-agent",
+      "kind": "tool",
+      "label": "rollback(deploy=v412) · T0 auto",
+      "outcome": "allowed"
+    },
+    {
+      "id": "tl_05",
+      "ts": "2026-10-22T03:13:02+07:00",
+      "actor_type": "agent",
+      "actor": "ai-oncall-agent",
+      "kind": "refusal",
+      "label": "decrypt_records refused by Tide · missing _tide_customer_pii.selfdecrypt",
+      "outcome": "refused"
+    },
+    {
+      "id": "tl_06",
+      "ts": "2026-10-22T03:13:10+07:00",
+      "actor_type": "agent",
+      "actor": "ai-oncall-agent",
+      "kind": "request",
+      "label": "CR-0192 requested · customer_pii.selfdecrypt · 5 records · 15 min · T2",
+      "outcome": "pending",
+      "request_id": "CR-0192"
+    },
+    {
+      "id": "tl_07",
+      "ts": "2026-10-22T03:15:40+07:00",
+      "actor_type": "human",
+      "actor": "linh.tran",
+      "kind": "approval",
+      "label": "Linh Tran signed CR-0192 · 1 of 2",
+      "outcome": "signed",
+      "request_id": "CR-0192"
+    },
+    {
+      "id": "tl_08",
+      "ts": "2026-10-22T03:16:05+07:00",
+      "actor_type": "human",
+      "actor": "marcus.lee",
+      "kind": "approval",
+      "label": "Marcus Lee signed CR-0192 · 2 of 2 · threshold-signed",
+      "outcome": "signed",
+      "request_id": "CR-0192"
+    },
+    {
+      "id": "tl_09",
+      "ts": "2026-10-22T03:16:30+07:00",
+      "actor_type": "agent",
+      "actor": "ai-oncall-agent",
+      "kind": "tool",
+      "label": "decrypt_records · 5 records · decrypted in browser session",
+      "outcome": "allowed"
+    },
+    {
+      "id": "tl_10",
+      "ts": "2026-10-22T03:18:20+07:00",
+      "actor_type": "system",
+      "actor": "scan",
+      "kind": "injection",
+      "label": "PROMPT_INJECTION detected in log (0.97, fr) · Atlas context flagged",
+      "outcome": "blocked"
+    },
+    {
+      "id": "tl_11",
+      "ts": "2026-10-22T03:18:31+07:00",
+      "actor_type": "agent",
+      "actor": "ai-oncall-agent",
+      "kind": "blocked",
+      "label": "grant_role(realm-admin) blocked · CR-0193 · T3 ↑ injection",
+      "outcome": "blocked",
+      "request_id": "CR-0193"
+    },
+    {
+      "id": "tl_12",
+      "ts": "2026-10-22T03:20:10+07:00",
+      "actor_type": "human",
+      "actor": "dave.kim",
+      "kind": "blocked",
+      "label": "Admin role edit on ai-oncall-agent → CR-0195 pending 0/3 · no roles changed",
+      "outcome": "blocked",
+      "request_id": "CR-0195"
+    },
+    {
+      "id": "tl_13",
+      "ts": "2026-10-22T03:28:00+07:00",
+      "actor_type": "system",
+      "actor": "cosign",
+      "kind": "expiry",
+      "label": "customer_pii.selfdecrypt expired for ai-oncall-agent · authority returned",
+      "outcome": "expired",
+      "request_id": "CR-0192"
+    },
+    {
+      "id": "tl_14",
+      "ts": "2026-10-22T03:29:00+07:00",
+      "actor_type": "human",
+      "actor": "linh.tran",
+      "kind": "deploy",
+      "label": "Hotfix v414 deployed · merchant config migration patched",
+      "outcome": "allowed"
+    },
+    {
+      "id": "tl_15",
+      "ts": "2026-10-22T03:31:00+07:00",
+      "actor_type": "system",
+      "actor": "monitor",
+      "kind": "resolved",
+      "label": "INC-2417 resolved · MTTR 19 min",
+      "outcome": "allowed"
+    }
+  ]
+}

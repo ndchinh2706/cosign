@@ -1,0 +1,14 @@
+{
+  "v": 1,
+  "id": "c_sub",
+  "ts": "2026-10-22T03:12:02+07:00",
+  "type": "subscribe",
+  "channel": null,
+  "payload": {
+    "channels": [
+      "incident:INC-2417",
+      "run:run_01"
+    ],
+    "console": true
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "items": [
+    {
+      "version": "v7",
+      "created_at": "2026-10-15T10:00:00+07:00",
+      "signed_by": [
+        "marcus.lee",
+        "linh.tran",
+        "dave.kim"
+      ],
+      "hash": "sha256:c0de…77f1",
+      "signature": "sig:a1b2…99e3 (14/20 ORK)",
+      "change": "Add escalation rule: +1 tier on injection"
+    },
+    {
+      "version": "v6",
+      "created_at": "2026-09-30T15:20:00+07:00",
+      "signed_by": [
+        "marcus.lee",
+        "linh.tran",
+        "dave.kim"
+      ],
+      "hash": "sha256:5b7e…0a12",
+      "signature": "sig:4e4e…1c20 (14/20 ORK)",
+      "change": "T2 max duration 30 min"
+    },
+    {
+      "version": "v5",
+      "created_at": "2026-09-12T09:05:00+07:00",
+      "signed_by": [
+        "marcus.lee",
+        "linh.tran",
+        "dave.kim"
+      ],
+      "hash": "sha256:9d01…b3c4",
+      "signature": "sig:0f0f…8a8a (14/20 ORK)",
+      "change": "Agents never hold roles.grant"
+    }
+  ]
+}

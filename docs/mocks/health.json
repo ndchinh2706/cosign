@@ -1,0 +1,8 @@
+{
+  "status": "ok",
+  "governance_mode": "mock",
+  "auth_mode": "dev",
+  "scan_mode": "heuristic",
+  "agent_mode": "llm",
+  "version": "0.1.0"
+}

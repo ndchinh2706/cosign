@@ -1,0 +1,77 @@
+{
+  "capabilities": [
+    "customer_pii.selfdecrypt",
+    "roles.grant",
+    "secrets.rotate",
+    "policy.edit",
+    "audit.write"
+  ],
+  "identities": [
+    {
+      "username": "ai-oncall-agent",
+      "display_name": "Atlas",
+      "type": "agent",
+      "cells": {
+        "customer_pii.selfdecrypt": "pending",
+        "roles.grant": "locked",
+        "secrets.rotate": "locked",
+        "policy.edit": "locked",
+        "audit.write": "locked"
+      }
+    },
+    {
+      "username": "linh.tran",
+      "display_name": "Linh Tran",
+      "type": "human",
+      "cells": {
+        "customer_pii.selfdecrypt": "locked",
+        "roles.grant": "locked",
+        "secrets.rotate": "locked",
+        "policy.edit": "locked",
+        "audit.write": "locked"
+      }
+    },
+    {
+      "username": "marcus.lee",
+      "display_name": "Marcus Lee",
+      "type": "human",
+      "cells": {
+        "customer_pii.selfdecrypt": "allowed",
+        "roles.grant": "locked",
+        "secrets.rotate": "locked",
+        "policy.edit": "locked",
+        "audit.write": "locked"
+      }
+    },
+    {
+      "username": "dave.kim",
+      "display_name": "Dave Kim",
+      "type": "human",
+      "cells": {
+        "customer_pii.selfdecrypt": "pending",
+        "roles.grant": "locked",
+        "secrets.rotate": "locked",
+        "policy.edit": "locked",
+        "audit.write": "locked"
+      }
+    },
+    {
+      "username": "priya.nair",
+      "display_name": "Priya Nair",
+      "type": "human",
+      "cells": {
+        "customer_pii.selfdecrypt": "locked",
+        "roles.grant": "locked",
+        "secrets.rotate": "locked",
+        "policy.edit": "locked",
+        "audit.write": "locked"
+      }
+    }
+  ],
+  "legend": {
+    "allowed": "✓",
+    "pending": "⏳",
+    "locked": "🔒",
+    "granted": "⏱"
+  }
+}

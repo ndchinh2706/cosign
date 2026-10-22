@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "id": "c_unsub",
+  "ts": "2026-10-22T03:40:00+07:00",
+  "type": "unsubscribe",
+  "channel": null,
+  "payload": {
+    "channels": [
+      "run:run_01"
+    ]
+  }
+}

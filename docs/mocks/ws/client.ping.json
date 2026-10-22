@@ -1,0 +1,8 @@
+{
+  "v": 1,
+  "id": "c_ping",
+  "ts": "2026-10-22T03:12:30+07:00",
+  "type": "ping",
+  "channel": null,
+  "payload": {}
+}

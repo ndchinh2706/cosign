@@ -1,0 +1,13 @@
+{
+  "id": "ae_0007",
+  "verified": true,
+  "hash": "sha256:daf0248097facf58…",
+  "prev_hash": "sha256:b40214bcd9bfa5f6…",
+  "signers": [
+    "ork"
+  ],
+  "ork_nodes": "14/20",
+  "signature": "sig:4c1d…a9f0 (14/20 ORK)",
+  "verified_at": "2026-10-22T03:35:10+07:00",
+  "method": "mock-hmac"
+}

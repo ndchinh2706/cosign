@@ -1,0 +1,1801 @@
+openapi: 3.1.0
+info:
+  title: Cosign API
+  version: 0.1.0
+  summary: Production access cho AI agent mà không cần god key
+  description: |
+    Contract REST giữa web (Next.js) và api (FastAPI). Nguồn gốc và sequence diagram ở `docs/API.md`;
+    mock response từng endpoint ở `docs/mocks/` (mỗi example dưới đây trỏ `externalValue` sang file tương ứng).
+    WebSocket mô tả ở path `/ws` (chỉ mô tả, xem `docs/API.md` §6).
+
+    Role gate ghi ở đầu `description` của mỗi operation. Ký hiệu: `*` = mọi user đã đăng nhập;
+    `agent`, `oncall`, `security` (= security-lead), `admin` (= platform-admin), `compliance`.
+servers:
+  - url: http://localhost:8000/api/v1
+    description: FastAPI local (docker-compose)
+
+security:
+  - bearerAuth: []
+  - demoUser: []
+
+tags:
+  - name: common
+  - name: incidents
+  - name: agent
+  - name: requests
+  - name: records
+  - name: scan
+  - name: admin
+  - name: governance
+  - name: audit
+  - name: demo
+  - name: ws
+
+paths:
+  /health:
+    get:
+      tags: [common]
+      summary: Trạng thái api và các mode đang bật
+      description: "Role: none. Không cần auth."
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+              examples:
+                default: { externalValue: ./mocks/health.json }
+
+  /me:
+    get:
+      tags: [common]
+      summary: Identity, roles, Authority Meter, route home
+      description: "Role: *."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+              examples:
+                atlas: { externalValue: ./mocks/me.json }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /notifications:
+    get:
+      tags: [common]
+      summary: Notifications drawer (S3), nhóm approval / agent / security
+      description: "Role: *."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationGroups" }
+              examples:
+                default: { externalValue: ./mocks/notifications.json }
+        "401": { $ref: "#/components/responses/Unauthenticated" }
+
+  /notifications/{id}/read:
+    post:
+      tags: [common]
+      summary: Đánh dấu đã đọc
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "204": { description: Đã đánh dấu }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /incidents:
+    get:
+      tags: [incidents]
+      summary: Danh sách incident + stat cards (E1)
+      description: "Role: *."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncidentList" }
+              examples:
+                default: { externalValue: ./mocks/incidents.json }
+
+  /incidents/{id}:
+    get:
+      tags: [incidents]
+      summary: Chi tiết incident (E2 header)
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/IncidentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncidentDetail" }
+              examples:
+                default: { externalValue: ./mocks/incident.json }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /incidents/{id}/timeline:
+    get:
+      tags: [incidents]
+      summary: Timeline hợp nhất human / agent / approval / refusal
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/IncidentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncidentTimeline" }
+              examples:
+                default: { externalValue: ./mocks/incident-timeline.json }
+
+  /incidents/{id}/metrics:
+    get:
+      tags: [incidents]
+      summary: Series error_rate + markers
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/IncidentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Metrics" }
+              examples:
+                default: { externalValue: ./mocks/incident-metrics.json }
+
+  /incidents/{id}/access:
+    get:
+      tags: [incidents]
+      summary: Access request thuộc incident (E2 tab Access)
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/IncidentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncidentAccess" }
+              examples:
+                default: { externalValue: ./mocks/incident-access.json }
+
+  /incidents/{id}/receipt:
+    get:
+      tags: [incidents, audit]
+      summary: Access Receipt (C2)
+      description: "Role: compliance, security, oncall."
+      parameters: [{ $ref: "#/components/parameters/IncidentId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Receipt" }
+              examples:
+                default: { externalValue: ./mocks/receipt.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /services:
+    get:
+      tags: [incidents]
+      summary: Health list các service
+      description: "Role: *."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ServiceList" }
+              examples:
+                default: { externalValue: ./mocks/services.json }
+
+  /deploys:
+    get:
+      tags: [incidents]
+      summary: Deploys của một service
+      description: "Role: *."
+      parameters:
+        - name: service
+          in: query
+          schema: { type: string, example: payments-api }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeployList" }
+              examples:
+                default: { externalValue: ./mocks/deploys.json }
+
+  /logs:
+    get:
+      tags: [incidents]
+      summary: Log mock của service; dòng inject có `injected:true` + `scan`
+      description: "Role: *."
+      parameters:
+        - { name: service, in: query, schema: { type: string } }
+        - { name: since, in: query, schema: { type: string, example: "03:00" } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LogList" }
+              examples:
+                default: { externalValue: ./mocks/logs.json }
+
+  /agent/runs:
+    post:
+      tags: [agent]
+      summary: Bắt đầu agent run cho một incident
+      description: "Role: agent, oncall, security."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [incident_id]
+              properties:
+                incident_id: { type: string, example: INC-2417 }
+                mode: { type: string, enum: [llm, scripted] }
+      responses:
+        "201":
+          description: Run đã tạo; theo dõi qua WS `run:<id>`
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRun" }
+              examples:
+                default: { externalValue: ./mocks/agent-run-create.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/InvalidState" }
+    get:
+      tags: [agent]
+      summary: Danh sách run
+      description: "Role: *."
+      parameters:
+        - { name: incident, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRunList" }
+              examples:
+                default: { externalValue: ./mocks/agent-runs.json }
+
+  /agent/runs/{id}:
+    get:
+      tags: [agent]
+      summary: Run + steps (snapshot A1; sau đó theo WS)
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRun" }
+              examples:
+                default: { externalValue: ./mocks/agent-run.json }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /agent/runs/{id}/summary:
+    get:
+      tags: [agent]
+      summary: Run summary (A6)
+      description: "Role: *."
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RunSummary" }
+              examples:
+                default: { externalValue: ./mocks/agent-run-summary.json }
+
+  /agent/runs/{id}/pause:
+    post:
+      tags: [agent]
+      summary: Pause agent (kill switch mềm)
+      description: "Role: oncall, security."
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      responses:
+        "200": { $ref: "#/components/responses/RunStatus" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/InvalidState" }
+
+  /agent/runs/{id}/resume:
+    post:
+      tags: [agent]
+      summary: Resume agent
+      description: "Role: oncall, security."
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      responses:
+        "200": { $ref: "#/components/responses/RunStatus" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/InvalidState" }
+
+  /agent/runs/{id}/quarantine:
+    post:
+      tags: [agent]
+      summary: Quarantine context (bỏ dòng inject, cắt escalation cho request mới)
+      description: "Role: security."
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      responses:
+        "200": { $ref: "#/components/responses/RunStatus" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /agent/runs/{id}/tool-result:
+    post:
+      tags: [agent]
+      summary: Fallback REST cho WS `tool_result`
+      description: "Role: agent. Ưu tiên gửi qua WS; chỉ dùng khi WS rớt."
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ToolResult" }
+      responses:
+        "202": { description: Đã nhận }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /requests:
+    post:
+      tags: [requests]
+      summary: Tạo access request (change request của Cosign)
+      description: "Role: agent (qua tool request_access), admin, security. Tier tính theo policy + escalation (API.md §2.3)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessRequestCreate" }
+      responses:
+        "201":
+          description: Request đã tạo, status pending
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+              examples:
+                default: { externalValue: ./mocks/request-create.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/ValidationError" }
+        "503": { $ref: "#/components/responses/TideUnavailable" }
+    get:
+      tags: [requests]
+      summary: Queue request (L1, E1 "Needs your approval")
+      description: "Role: oncall, security, admin, compliance; agent chỉ thấy của mình."
+      parameters:
+        - { name: status, in: query, schema: { $ref: "#/components/schemas/RequestStatus" } }
+        - { name: incident, in: query, schema: { type: string } }
+        - { name: requester, in: query, schema: { type: string } }
+        - { name: flagged, in: query, schema: { type: boolean } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequestList" }
+              examples:
+                default: { externalValue: ./mocks/requests.json }
+
+  /requests/{id}:
+    get:
+      tags: [requests]
+      summary: Chi tiết request + safety_checks + security_context (E3/L2)
+      description: "Role: như GET /requests."
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+              examples:
+                cr0192: { externalValue: ./mocks/request.json }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /requests/{id}/approve:
+    post:
+      tags: [requests]
+      summary: Approve & sign
+      description: "Role: role trong `quorum.eligible` và khác requester. Đủ threshold → status approved, granted_at, expires_at."
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                duration_min: { type: integer, minimum: 1, description: Approve with shorter duration }
+      responses:
+        "200":
+          description: Request sau khi ghi approval
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+              examples:
+                first_of_two: { externalValue: ./mocks/request-approve.json }
+                second_approved: { externalValue: ./mocks/request-approve-2.json }
+        "403":
+          description: Không trong eligible hoặc là requester (`details.reason = requester_cannot_approve`)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              example:
+                error: { code: forbidden, message: Requester cannot approve own request, details: { reason: requester_cannot_approve } }
+        "409": { $ref: "#/components/responses/InvalidState" }
+        "503": { $ref: "#/components/responses/TideUnavailable" }
+
+  /requests/{id}/deny:
+    post:
+      tags: [requests]
+      summary: Deny (tuỳ chọn quarantine agent context)
+      description: "Role: như approve."
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+                quarantine_agent_context: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Request status denied
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+              examples:
+                default: { externalValue: ./mocks/request-deny.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/InvalidState" }
+
+  /requests/{id}/withdraw:
+    post:
+      tags: [requests]
+      summary: Requester rút request
+      description: "Role: requester."
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      responses:
+        "200":
+          description: status withdrawn
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/InvalidState" }
+
+  /records:
+    get:
+      tags: [records]
+      summary: Ciphertext + tag; client tự `IAMService.doDecrypt`
+      description: "Role: *. FastAPI không bao giờ có plaintext."
+      parameters:
+        - name: ids
+          in: query
+          required: true
+          schema: { type: string, example: "mrc_8812,mrc_8830" }
+          description: danh sách id, phân cách dấu phẩy
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecordList" }
+              examples:
+                default: { externalValue: ./mocks/records.json }
+
+  /records/{id}:
+    put:
+      tags: [records]
+      summary: Ghi một bản ghi đã mã hoá (seed từ trình duyệt sau doEncrypt)
+      description: "Role: security, admin."
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecordWrite" }
+      responses:
+        "200": { description: Đã ghi }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /records/bulk:
+    post:
+      tags: [records]
+      summary: Seed hàng loạt ciphertext
+      description: "Role: security, admin."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items: { $ref: "#/components/schemas/RecordWriteWithId" }
+      responses:
+        "201":
+          description: Số bản ghi đã ghi
+          content:
+            application/json:
+              schema: { type: object, properties: { count: { type: integer } } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /records/access-log:
+    post:
+      tags: [records]
+      summary: Tab Agent Console báo đã giải mã (ids + fields, không gửi giá trị)
+      description: "Role: agent. Sinh audit `data.accessed`."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [run_id, record_ids, fields]
+              properties:
+                run_id: { type: string }
+                record_ids: { type: array, items: { type: string } }
+                fields: { type: array, items: { type: string } }
+      responses:
+        "201": { description: Audit đã ghi }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /scan:
+    post:
+      tags: [scan]
+      summary: Phân loại prompt injection (model C1 hoặc heuristic)
+      description: "Role: * (và nội bộ agent loop)."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string }
+                lang: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ScanResult" }
+              examples:
+                injection_fr: { externalValue: ./mocks/scan.json }
+
+  /scan/batch:
+    post:
+      tags: [scan]
+      summary: Scan nhiều dòng
+      description: "Role: *."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, text]
+                    properties: { id: { type: string }, text: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      allOf:
+                        - { type: object, properties: { id: { type: string } } }
+                        - { $ref: "#/components/schemas/ScanResult" }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: Users & Roles (R1)
+      description: "Role: admin, security."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUserList" }
+              examples:
+                default: { externalValue: ./mocks/admin-users.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/users/{username}/roles:
+    put:
+      tags: [admin]
+      summary: Sửa role → luôn thành change request (R2)
+      description: |
+        Role: admin, security. Thêm role **không bao giờ áp dụng ngay**: trả `202 quorum_required` kèm request T3.
+        Gỡ role (giảm quyền) áp dụng ngay `200` — CẦN KIỂM CHỨNG TideCloak có cho gỡ role không qua quorum không.
+      parameters: [{ $ref: "#/components/parameters/Username" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                add: { type: array, items: { type: string }, example: [realm-admin, _tide_customer_pii.selfdecrypt] }
+                remove: { type: array, items: { type: string } }
+      responses:
+        "202":
+          description: Change request pending quorum, không role nào thay đổi
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuorumRequired" }
+              examples:
+                default: { externalValue: ./mocks/admin-roles-put.json }
+        "200":
+          description: Chỉ gỡ role (reducing authority is instant)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username: { type: string }
+                  roles: { type: array, items: { type: string } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/TideUnavailable" }
+
+  /admin/data/merchants:
+    get:
+      tags: [admin]
+      summary: Data browser — chỉ ciphertext (R3)
+      description: "Role: admin, security, compliance."
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminMerchants" }
+              examples:
+                default: { externalValue: ./mocks/admin-merchants.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/data/merchants/export:
+    post:
+      tags: [admin]
+      summary: Export table → chỉ ciphertext
+      description: "Role: admin."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExportResult" }
+              examples:
+                default: { externalValue: ./mocks/admin-export.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /admin/audit:
+    get:
+      tags: [admin, audit]
+      summary: Alias của GET /audit (R4)
+      description: "Role: admin."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditList" }
+              examples:
+                default: { externalValue: ./mocks/audit.json }
+
+  /admin/audit/{id}:
+    delete:
+      tags: [admin, audit]
+      summary: Thử xoá audit event → luôn bị từ chối
+      description: "Role: admin. Luôn `403 tide_refused`, đồng thời ghi thêm một audit event cho lần thử xoá."
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "403":
+          description: Audit events are threshold-signed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                default: { externalValue: ./mocks/admin-audit-delete.json }
+
+  /governance/overview:
+    get:
+      tags: [governance]
+      summary: Stats + change request queue (L1)
+      description: "Role: security, admin, compliance."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GovernanceOverview" }
+              examples:
+                default: { externalValue: ./mocks/governance-overview.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /governance/authority-map:
+    get:
+      tags: [governance]
+      summary: Grid identities × capabilities (L1)
+      description: "Role: security, admin, compliance."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthorityMap" }
+              examples:
+                default: { externalValue: ./mocks/authority-map.json }
+
+  /policies:
+    get:
+      tags: [governance]
+      summary: Policy hiện hành (tiers, escalation) (L3)
+      description: "Role: *."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Policy" }
+              examples:
+                v7: { externalValue: ./mocks/policies.json }
+
+  /policies/versions:
+    get:
+      tags: [governance]
+      summary: Lịch sử phiên bản policy
+      description: "Role: security, compliance."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PolicyVersionList" }
+              examples:
+                default: { externalValue: ./mocks/policy-versions.json }
+
+  /policies/draft:
+    post:
+      tags: [governance]
+      summary: Đề xuất policy mới → request T3 (policy_change)
+      description: "Role: security."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Policy" }
+      responses:
+        "202":
+          description: quorum_required
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QuorumRequired" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /agents:
+    get:
+      tags: [governance]
+      summary: Agent registry (L4)
+      description: "Role: security, oncall."
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentList" }
+              examples:
+                default: { externalValue: ./mocks/agents.json }
+
+  /agents/{username}:
+    get:
+      tags: [governance]
+      summary: Agent detail (tabs Authority / Runs / Requests / Injection events)
+      description: "Role: security, oncall."
+      parameters: [{ $ref: "#/components/parameters/Username" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentDetail" }
+              examples:
+                atlas: { externalValue: ./mocks/agent-detail.json }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /agents/{username}/revoke-all:
+    post:
+      tags: [governance]
+      summary: Kill switch — revoke mọi quyền elevated, không quorum
+      description: "Role: security. Reducing authority is instant."
+      parameters: [{ $ref: "#/components/parameters/Username" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RevokeAllResult" }
+              examples:
+                default: { externalValue: ./mocks/agent-revoke-all.json }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /audit:
+    get:
+      tags: [audit]
+      summary: Audit trail (C1)
+      description: "Role: compliance, security, admin, oncall."
+      parameters:
+        - { name: actor_type, in: query, schema: { $ref: "#/components/schemas/ActorType" } }
+        - { name: incident, in: query, schema: { type: string } }
+        - { name: capability, in: query, schema: { type: string } }
+        - { name: outcome, in: query, schema: { $ref: "#/components/schemas/Outcome" } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, default: 100 } }
+        - { name: cursor, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditList" }
+              examples:
+                inc2417: { externalValue: ./mocks/audit.json }
+
+  /audit/{id}:
+    get:
+      tags: [audit]
+      summary: Chi tiết audit event
+      description: "Role: như GET /audit."
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditEvent" }
+              examples:
+                default: { externalValue: ./mocks/audit-event.json }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /audit/{id}/verify:
+    post:
+      tags: [audit]
+      summary: Verify lại hash chain + chữ ký
+      description: "Role: như GET /audit."
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuditVerify" }
+              examples:
+                default: { externalValue: ./mocks/audit-verify.json }
+
+  /demo/reset:
+    post:
+      tags: [demo]
+      summary: Seed lại DB (giữ merchant_records trừ khi wipe_records)
+      description: "Chỉ AUTH_MODE=dev hoặc role security."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { wipe_records: { type: boolean, default: false } }
+      responses:
+        "200": { description: Đã reset }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /demo/logs/inject:
+    post:
+      tags: [demo]
+      summary: Thêm dòng log chứa prompt injection vào payments-api
+      description: "Chỉ AUTH_MODE=dev hoặc role security."
+      responses:
+        "201":
+          description: Dòng log đã thêm
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LogLine" }
+
+  /demo/requests/{id}/expire:
+    post:
+      tags: [demo]
+      summary: Ép request hết hạn ngay
+      description: "Chỉ AUTH_MODE=dev hoặc role security."
+      parameters: [{ $ref: "#/components/parameters/RequestId" }]
+      responses:
+        "200":
+          description: status expired
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessRequest" }
+
+  /demo/clock:
+    post:
+      tags: [demo]
+      summary: Dịch "now" hiển thị
+      description: "Chỉ AUTH_MODE=dev hoặc role security."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { offset_min: { type: integer } }
+      responses:
+        "200": { description: OK }
+
+  /ws:
+    get:
+      tags: [ws]
+      summary: WebSocket (mô tả, không phải REST)
+      description: |
+        `ws://localhost:8000/ws`. Auth bằng message `auth` đầu tiên trong 5 giây (`{token}` hoặc dev `{demo_user}`), nếu không server đóng `4401`.
+        Envelope chung `{v, id, ts, type, channel, payload}`. Client→server: `auth`, `subscribe`, `unsubscribe`, `tool_result`, `ping`.
+        Server→client: `auth_ok`, `error`, `pong`, `tool_call`, `agent.step`, `agent.message`, `agent.run.status`, `injection.detected`,
+        `request.created|updated|approved|denied|expired`, `authority.updated`, `audit.appended`, `incident.updated`, `metrics.tick`,
+        `notification`, `toast`, `signing.progress`. Kênh: `user:<u>`, `role:<r>`, `incident:<id>`, `run:<id>`, `agent-console:<u>`, `global`.
+        Chi tiết và payload mẫu: `docs/API.md` §6 và `docs/mocks/ws/`.
+      security: []
+      responses:
+        "101": { description: Switching Protocols }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token TideCloak; FastAPI verify qua JWKS (alg có thể EdDSA — CẦN KIỂM CHỨNG).
+    demoUser:
+      type: apiKey
+      in: header
+      name: X-Demo-User
+      description: Chỉ khi `AUTH_MODE=dev`. Giá trị là username trong seed (vd `linh.tran`).
+
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+    IncidentId: { name: id, in: path, required: true, schema: { type: string, example: INC-2417 } }
+    RunId: { name: id, in: path, required: true, schema: { type: string, example: run_01 } }
+    RequestId: { name: id, in: path, required: true, schema: { type: string, example: CR-0192 } }
+    Username: { name: username, in: path, required: true, schema: { type: string, example: ai-oncall-agent } }
+
+  responses:
+    Unauthenticated:
+      description: Thiếu hoặc sai token
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: unauthenticated, message: missing bearer token, details: {} } }
+    Forbidden:
+      description: Không đủ role
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: forbidden, message: role security-lead required, details: {} } }
+    NotFound:
+      description: Không tìm thấy
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: not_found, message: request CR-9999 not found, details: {} } }
+    InvalidState:
+      description: Trạng thái không cho phép thao tác
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: invalid_state, message: request already decided, details: { status: approved } } }
+    ValidationError:
+      description: Body không hợp lệ
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: validation_error, message: duration_min exceeds policy max 30, details: { field: duration_min } } }
+    TideUnavailable:
+      description: TideCloak không phản hồi (GOVERNANCE_MODE=real)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+          example: { error: { code: tide_unavailable, message: tidecloak timeout, details: {} } }
+    RunStatus:
+      description: Trạng thái run mới
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              run_id: { type: string }
+              status: { $ref: "#/components/schemas/RunStatus" }
+          example: { run_id: run_01, status: paused }
+
+  schemas:
+    Tier: { type: string, enum: [T0, T1, T2, T3] }
+    RunStatus: { type: string, enum: [running, waiting_approval, paused, completed, failed] }
+    StepKind: { type: string, enum: [think, tool, result, message] }
+    StepStatus: { type: string, enum: [running, ok, refused, blocked, pending, error] }
+    RequestType: { type: string, enum: [grant_role, revoke_role, policy_change, audit_delete] }
+    RequestStatus: { type: string, enum: [pending, approved, denied, withdrawn, expired, revoked] }
+    Decision: { type: string, enum: [approve, deny] }
+    ActorType: { type: string, enum: [agent, human, system] }
+    Outcome: { type: string, enum: [allowed, refused, blocked, pending, signed, expired, revoked] }
+    ScanLabel: { type: string, enum: [BENIGN, JAILBREAK, PROMPT_INJECTION] }
+    Capability:
+      type: string
+      enum: [services.restart, deploy.rollback, logs.read, metrics.read, customer_pii.selfdecrypt, roles.grant, secrets.rotate, policy.edit, audit.write, deploy.hotfix, scale.up]
+    AuthorityState: { type: string, enum: [allowed, locked, pending, granted] }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [unauthenticated, forbidden, not_found, invalid_state, validation_error, tide_refused, tide_unavailable]
+            message: { type: string }
+            details: { type: object, additionalProperties: true }
+
+    QuorumRequired:
+      type: object
+      description: Trả về `202` khi hành động biến thành change request
+      required: [code, request]
+      properties:
+        code: { type: string, const: quorum_required }
+        message: { type: string }
+        request: { $ref: "#/components/schemas/AccessRequest" }
+
+    Health:
+      type: object
+      properties:
+        status: { type: string }
+        governance_mode: { type: string, enum: [real, mock] }
+        auth_mode: { type: string, enum: [tide, dev] }
+        scan_mode: { type: string, enum: [model, heuristic] }
+        agent_mode: { type: string, enum: [llm, scripted] }
+        version: { type: string }
+
+    Identity:
+      type: object
+      required: [username, display_name, type]
+      properties:
+        username: { type: string }
+        display_name: { type: string }
+        type: { type: string, enum: [agent, human] }
+        email: { type: string }
+        avatar: { type: string, enum: [hexagon, round] }
+        role: { type: string }
+
+    AuthorityItem:
+      type: object
+      required: [capability, state]
+      properties:
+        capability: { $ref: "#/components/schemas/Capability" }
+        state: { $ref: "#/components/schemas/AuthorityState" }
+        tide_role: { type: string }
+        reason: { type: string }
+        expires_at: { type: string, format: date-time }
+        request_id: { type: string }
+        approvals: { type: integer }
+        required: { type: integer }
+
+    Me:
+      type: object
+      required: [user, roles, home, authority]
+      properties:
+        user: { $ref: "#/components/schemas/Identity" }
+        roles: { type: array, items: { type: string } }
+        home: { type: string }
+        authority: { type: array, items: { $ref: "#/components/schemas/AuthorityItem" } }
+        open_requests: { type: integer }
+        context_flagged: { type: boolean }
+
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        group: { type: string, enum: [approval, agent, security] }
+        title: { type: string }
+        body: { type: string }
+        request_id: { type: [string, "null"] }
+        run_id: { type: string }
+        requester: { $ref: "#/components/schemas/Identity" }
+        tier: { $ref: "#/components/schemas/Tier" }
+        approvals: { type: integer }
+        required: { type: integer }
+        read: { type: boolean }
+        ts: { type: string, format: date-time }
+    NotificationGroups:
+      type: object
+      properties:
+        unread: { type: integer }
+        groups:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              label: { type: string }
+              items: { type: array, items: { $ref: "#/components/schemas/Notification" } }
+
+    Incident:
+      type: object
+      required: [id, title, service, severity, status, started_at]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        service: { type: string }
+        severity: { type: string, enum: [SEV-1, SEV-2, SEV-3] }
+        status: { type: string, enum: [open, mitigating, resolved] }
+        started_at: { type: string, format: date-time }
+        resolved_at: { type: [string, "null"], format: date-time }
+        error_rate: { type: number }
+        owner_agent: { type: string }
+        owner_human: { type: string }
+        run_id: { type: string }
+        mini_timeline:
+          type: array
+          items: { type: object, properties: { ts: { type: string }, label: { type: string } } }
+    IncidentDetail:
+      allOf:
+        - { $ref: "#/components/schemas/Incident" }
+        - type: object
+          properties:
+            elapsed_s: { type: integer }
+            description: { type: string }
+            tabs: { type: array, items: { type: string } }
+            pending_requests: { type: integer }
+            agent_run:
+              type: object
+              properties:
+                id: { type: string }
+                status: { $ref: "#/components/schemas/RunStatus" }
+                agent: { $ref: "#/components/schemas/Identity" }
+    IncidentList:
+      type: object
+      properties:
+        stats:
+          type: object
+          properties:
+            active_incidents: { type: integer }
+            agent_runs_today: { type: integer }
+            pending_approvals: { type: integer }
+            mttr_7d_min: { type: integer }
+        items: { type: array, items: { $ref: "#/components/schemas/Incident" } }
+    TimelineItem:
+      type: object
+      properties:
+        id: { type: string }
+        ts: { type: string, format: date-time }
+        actor_type: { $ref: "#/components/schemas/ActorType" }
+        actor: { type: string }
+        kind: { type: string, enum: [deploy, alert, run, tool, refusal, request, approval, injection, blocked, expiry, resolved] }
+        label: { type: string }
+        outcome: { $ref: "#/components/schemas/Outcome" }
+        request_id: { type: string }
+    IncidentTimeline:
+      type: object
+      properties:
+        incident_id: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/TimelineItem" } }
+    Metrics:
+      type: object
+      properties:
+        service: { type: string }
+        metric: { type: string }
+        interval_s: { type: integer }
+        points:
+          type: array
+          items:
+            type: array
+            prefixItems: [{ type: string }, { type: number }]
+        markers:
+          type: array
+          items:
+            type: object
+            properties:
+              at: { type: string }
+              label: { type: string }
+              kind: { type: string, enum: [deploy, rollback, approval] }
+    IncidentAccess:
+      type: object
+      properties:
+        incident_id: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/RequestRow" } }
+
+    Service:
+      type: object
+      properties:
+        name: { type: string }
+        health: { type: string, enum: [ok, degraded, down] }
+        error_rate: { type: number }
+        p95_ms: { type: integer }
+        current_deploy: { type: string }
+        trend: { type: string }
+    ServiceList:
+      type: object
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/Service" } } }
+    Deploy:
+      type: object
+      properties:
+        version: { type: string }
+        service: { type: string }
+        status: { type: string, enum: [active, superseded, rolled_back] }
+        deployed_at: { type: string, format: date-time }
+        note: { type: string }
+        rolled_back_at: { type: string, format: date-time }
+        rolled_back_by: { type: string }
+    DeployList:
+      type: object
+      properties:
+        service: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/Deploy" } }
+    LogLine:
+      type: object
+      properties:
+        id: { type: integer }
+        service: { type: string }
+        ts: { type: string, format: date-time }
+        level: { type: string, enum: [INFO, WARN, ERROR] }
+        text: { type: string }
+        injected: { type: boolean }
+        scan: { $ref: "#/components/schemas/ScanResult" }
+    LogList:
+      type: object
+      properties:
+        service: { type: string }
+        since: { type: string }
+        items: { type: array, items: { $ref: "#/components/schemas/LogLine" } }
+
+    AgentStep:
+      type: object
+      required: [id, seq, kind, ts, status]
+      properties:
+        id: { type: string }
+        seq: { type: integer }
+        kind: { $ref: "#/components/schemas/StepKind" }
+        ts: { type: string, format: date-time }
+        status: { $ref: "#/components/schemas/StepStatus" }
+        text: { type: string, description: cho kind think / message }
+        tool_name: { type: string, enum: [get_metrics, read_logs, rollback, decrypt_records, request_access, grant_role] }
+        input: { type: object, additionalProperties: true }
+        output: { type: object, additionalProperties: true }
+        error:
+          type: object
+          properties:
+            code: { type: string }
+            title: { type: string }
+            missing_role: { type: string }
+            note: { type: string }
+        tier: { $ref: "#/components/schemas/Tier" }
+        tier_note: { type: string }
+        escalated: { type: boolean }
+        escalation_reason: { type: string }
+        call_id: { type: string }
+        injection_event_id: { type: string }
+    AgentRun:
+      type: object
+      required: [id, incident_id, agent, status, started_at]
+      properties:
+        id: { type: string }
+        incident_id: { type: string }
+        agent: { type: string }
+        status: { $ref: "#/components/schemas/RunStatus" }
+        mode: { type: string, enum: [llm, scripted] }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: [string, "null"], format: date-time }
+        context_flagged: { type: boolean }
+        context_quarantined: { type: boolean }
+        steps: { type: array, items: { $ref: "#/components/schemas/AgentStep" } }
+        ws_channel: { type: string }
+    AgentRunList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            allOf:
+              - { $ref: "#/components/schemas/AgentRun" }
+              - { type: object, properties: { steps_count: { type: integer } } }
+    RunSummary:
+      type: object
+      properties:
+        run_id: { type: string }
+        incident_id: { type: string }
+        resolved_at: { type: string, format: date-time }
+        mttr_min: { type: integer }
+        actions:
+          type: object
+          properties:
+            total: { type: integer }
+            auto: { type: integer }
+            approved: { type: integer }
+            blocked: { type: integer }
+        authority_returned:
+          type: array
+          items:
+            type: object
+            properties:
+              capability: { $ref: "#/components/schemas/Capability" }
+              revoked_at: { type: string, format: date-time }
+              reason: { type: string }
+        receipt_url: { type: string }
+    ToolResult:
+      type: object
+      required: [run_id, step_id, call_id, tool, ok]
+      properties:
+        run_id: { type: string }
+        step_id: { type: string }
+        call_id: { type: string }
+        tool: { type: string }
+        ok: { type: boolean }
+        output: { type: object, additionalProperties: true }
+        error:
+          type: object
+          properties:
+            code: { type: string, enum: [tide_refused, decrypt_error, timeout] }
+            missing_role: { type: string }
+            raw: { type: string }
+
+    Approval:
+      type: object
+      properties:
+        username: { type: string }
+        display_name: { type: string }
+        signed_at: { type: string, format: date-time }
+        signature: { type: string, example: "sig:7f3a…c91e" }
+        ork_nodes: { type: string, example: "14/20" }
+        duration_override_min: { type: integer }
+    Quorum:
+      type: object
+      required: [required, of, approvals]
+      properties:
+        required: { type: integer }
+        of: { type: integer }
+        approvals: { type: integer }
+        eligible:
+          type: array
+          items:
+            type: object
+            properties:
+              username: { type: string }
+              display_name: { type: string }
+              role: { type: string }
+        signed_by: { type: array, items: { $ref: "#/components/schemas/Approval" } }
+        requester_cannot_approve: { type: boolean }
+    SafetyCheck:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        status: { type: string, enum: [pass, fail, warn, info] }
+        detail: { type: string }
+    SecurityContext:
+      type: object
+      properties:
+        why_flagged: { type: string }
+        injection_event_id: { type: string }
+        line: { type: string }
+        blast_radius:
+          type: object
+          properties:
+            customer_records: { type: integer }
+            could: { type: array, items: { type: string } }
+        recent_activity:
+          type: array
+          items:
+            type: object
+            properties:
+              ts: { type: string, format: date-time }
+              action: { type: string }
+              outcome: { type: string }
+              note: { type: string }
+    AccessRequestCreate:
+      type: object
+      required: [type, capability, target_user]
+      properties:
+        type: { $ref: "#/components/schemas/RequestType" }
+        capability: { $ref: "#/components/schemas/Capability" }
+        target_user: { type: string }
+        roles: { type: array, items: { type: string } }
+        scope: { type: object, additionalProperties: true, example: { record_ids: [mrc_8812, mrc_8830, mrc_8841, mrc_8857, mrc_8863] } }
+        duration_min: { type: integer }
+        justification: { type: string }
+        evidence: { type: object, additionalProperties: true }
+        run_id: { type: string }
+        incident_id: { type: string }
+    AccessRequest:
+      type: object
+      required: [id, type, status, requester, target_user, capability, tier, quorum, created_at]
+      properties:
+        id: { type: string, example: CR-0192 }
+        type: { $ref: "#/components/schemas/RequestType" }
+        status: { $ref: "#/components/schemas/RequestStatus" }
+        requester: { $ref: "#/components/schemas/Identity" }
+        target_user: { type: string }
+        capability: { $ref: "#/components/schemas/Capability" }
+        roles: { type: array, items: { type: string } }
+        scope: { type: object, additionalProperties: true }
+        duration_min: { type: [integer, "null"] }
+        justification: { type: string }
+        evidence: { type: object, additionalProperties: true }
+        base_tier: { $ref: "#/components/schemas/Tier" }
+        tier: { $ref: "#/components/schemas/Tier" }
+        escalated: { type: boolean }
+        escalation_reason: { type: [string, "null"] }
+        quorum: { $ref: "#/components/schemas/Quorum" }
+        safety_checks: { type: array, items: { $ref: "#/components/schemas/SafetyCheck" } }
+        flags:
+          type: array
+          items: { type: string, enum: [injection, security_review, self_grant, unusual_time, admin_role_edit, agent_target] }
+        flag_note: { type: string }
+        security_context:
+          oneOf:
+            - { $ref: "#/components/schemas/SecurityContext" }
+            - { type: "null" }
+        incident_id: { type: [string, "null"] }
+        run_id: { type: [string, "null"] }
+        tide_cr_id: { type: [string, "null"] }
+        signature: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+        decided_at: { type: [string, "null"], format: date-time }
+        granted_at: { type: [string, "null"], format: date-time }
+        expires_at: { type: [string, "null"], format: date-time }
+        age_s: { type: integer }
+        denied_by: { $ref: "#/components/schemas/Identity" }
+        deny_reason: { type: string }
+        quarantined: { type: boolean }
+    AccessRequestList:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AccessRequest" } }
+        total: { type: integer }
+    RequestRow:
+      type: object
+      description: Dòng rút gọn cho queue / tab Access
+      properties:
+        id: { type: string }
+        requester: { $ref: "#/components/schemas/Identity" }
+        change: { type: string }
+        capability: { $ref: "#/components/schemas/Capability" }
+        tier: { $ref: "#/components/schemas/Tier" }
+        escalated: { type: boolean }
+        approvals: { type: integer }
+        required: { type: integer }
+        age_s: { type: integer }
+        status: { $ref: "#/components/schemas/RequestStatus" }
+        flags: { type: array, items: { type: string } }
+        flag_note: { type: string }
+        created_at: { type: string, format: date-time }
+
+    Record:
+      type: object
+      required: [id, tag, ciphertext]
+      properties:
+        id: { type: string }
+        tag: { type: string, example: customer_pii }
+        ciphertext: { type: string, description: output của IAMService.doEncrypt }
+        encrypted_by: { type: string }
+        encrypted_at: { type: string, format: date-time }
+    RecordList:
+      type: object
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/Record" } } }
+    RecordWrite:
+      type: object
+      required: [tag, ciphertext]
+      properties:
+        tag: { type: string }
+        ciphertext: { type: string }
+    RecordWriteWithId:
+      allOf:
+        - { $ref: "#/components/schemas/RecordWrite" }
+        - { type: object, required: [id], properties: { id: { type: string } } }
+
+    ScanResult:
+      type: object
+      required: [label, score]
+      properties:
+        label: { $ref: "#/components/schemas/ScanLabel" }
+        score: { type: number, minimum: 0, maximum: 1 }
+        lang: { type: string }
+        model: { type: string }
+        scores:
+          type: object
+          properties:
+            BENIGN: { type: number }
+            JAILBREAK: { type: number }
+            PROMPT_INJECTION: { type: number }
+        matched: { type: array, items: { type: string } }
+
+    AdminUser:
+      type: object
+      properties:
+        username: { type: string }
+        display_name: { type: string }
+        type: { type: string, enum: [agent, human] }
+        roles: { type: array, items: { type: string } }
+        last_login: { type: string, format: date-time }
+        pending_requests: { type: array, items: { type: string } }
+    AdminUserList:
+      type: object
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/AdminUser" } } }
+    AdminMerchants:
+      type: object
+      properties:
+        table: { type: string }
+        tag: { type: string }
+        total: { type: integer }
+        limit: { type: integer }
+        info: { type: string }
+        columns: { type: array, items: { type: string } }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              name: { type: string, description: ciphertext }
+              bank_account: { type: string, description: ciphertext }
+              tax_id: { type: string, description: ciphertext }
+              encrypted: { type: boolean }
+    ExportResult:
+      type: object
+      properties:
+        rows: { type: integer }
+        format: { type: string, const: ciphertext }
+        file: { type: string }
+        size_bytes: { type: integer }
+        note: { type: string }
+        audit_event_id: { type: string }
+
+    GovernanceOverview:
+      type: object
+      properties:
+        stats:
+          type: object
+          properties:
+            pending_change_requests: { type: integer }
+            agents_elevated_now: { type: integer }
+            injection_detections_24h: { type: integer }
+            policy_version: { type: string }
+            policy_signed: { type: boolean }
+        queue: { type: array, items: { $ref: "#/components/schemas/RequestRow" } }
+    AuthorityMap:
+      type: object
+      properties:
+        capabilities: { type: array, items: { $ref: "#/components/schemas/Capability" } }
+        identities:
+          type: array
+          items:
+            allOf:
+              - { $ref: "#/components/schemas/Identity" }
+              - type: object
+                properties:
+                  cells:
+                    type: object
+                    additionalProperties: { $ref: "#/components/schemas/AuthorityState" }
+        legend: { type: object, additionalProperties: { type: string } }
+    PolicyTier:
+      type: object
+      properties:
+        label: { type: string }
+        required: { type: integer }
+        of: { type: integer }
+        max_duration_min: { type: [integer, "null"] }
+        eligible: { type: array, items: { type: string } }
+        examples: { type: array, items: { type: string } }
+    Policy:
+      type: object
+      required: [version, tiers, capability_tier, escalation]
+      properties:
+        version: { type: string }
+        tiers:
+          type: object
+          properties:
+            T0: { $ref: "#/components/schemas/PolicyTier" }
+            T1: { $ref: "#/components/schemas/PolicyTier" }
+            T2: { $ref: "#/components/schemas/PolicyTier" }
+            T3: { $ref: "#/components/schemas/PolicyTier" }
+        capability_tier:
+          type: object
+          additionalProperties: { $ref: "#/components/schemas/Tier" }
+        escalation:
+          type: array
+          items:
+            type: object
+            properties:
+              rule: { type: string }
+              effect: { type: string }
+              label: { type: string }
+              capabilities: { type: array, items: { type: string } }
+        signed_by: { type: array, items: { $ref: "#/components/schemas/Identity" } }
+        hash: { type: string }
+        signature: { type: string }
+        created_at: { type: string, format: date-time }
+        edit_note: { type: string }
+        principle: { type: string }
+    PolicyVersionList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              version: { type: string }
+              created_at: { type: string, format: date-time }
+              signed_by: { type: array, items: { type: string } }
+              hash: { type: string }
+              signature: { type: string }
+              change: { type: string }
+
+    AgentCard:
+      type: object
+      properties:
+        username: { type: string }
+        display_name: { type: string }
+        type: { type: string, const: agent }
+        purpose: { type: string }
+        model: { type: string }
+        status: { type: string }
+        authority: { type: array, items: { $ref: "#/components/schemas/AuthorityItem" } }
+        runs_today: { type: integer }
+        last_action:
+          type: object
+          properties: { ts: { type: string, format: date-time }, label: { type: string } }
+        flags: { type: array, items: { type: string } }
+    AgentList:
+      type: object
+      properties: { items: { type: array, items: { $ref: "#/components/schemas/AgentCard" } } }
+    InjectionEvent:
+      type: object
+      properties:
+        id: { type: string }
+        run_id: { type: string }
+        source: { type: string }
+        text: { type: string }
+        label: { $ref: "#/components/schemas/ScanLabel" }
+        score: { type: number }
+        lang: { type: string }
+        ts: { type: string, format: date-time }
+        quarantined: { type: boolean }
+    AgentDetail:
+      allOf:
+        - { $ref: "#/components/schemas/AgentCard" }
+        - type: object
+          properties:
+            runs: { type: array, items: { type: object, additionalProperties: true } }
+            requests: { type: array, items: { $ref: "#/components/schemas/RequestRow" } }
+            injection_events: { type: array, items: { $ref: "#/components/schemas/InjectionEvent" } }
+            kill_switch:
+              type: object
+              properties: { label: { type: string }, note: { type: string } }
+    RevokeAllResult:
+      type: object
+      properties:
+        user: { type: string }
+        revoked: { type: array, items: { type: string } }
+        withdrawn_requests: { type: array, items: { type: string } }
+        run_paused: { type: string }
+        quorum_required: { type: boolean, const: false }
+        note: { type: string }
+        ts: { type: string, format: date-time }
+
+    AuditEvent:
+      type: object
+      required: [id, ts, actor, actor_type, action, target, outcome, hash]
+      properties:
+        id: { type: string }
+        ts: { type: string, format: date-time }
+        actor: { type: string }
+        actor_type: { $ref: "#/components/schemas/ActorType" }
+        action: { type: string }
+        target: { type: string }
+        outcome: { $ref: "#/components/schemas/Outcome" }
+        incident_id: { type: [string, "null"] }
+        request_id: { type: [string, "null"] }
+        payload: { type: object, additionalProperties: true }
+        signers: { type: array, items: { type: string } }
+        signature: { type: string }
+        prev_hash: { type: string }
+        hash: { type: string }
+        verified: { type: boolean }
+    AuditList:
+      type: object
+      properties:
+        filters: { type: object, additionalProperties: true }
+        total: { type: integer }
+        next_cursor: { type: [string, "null"] }
+        chain: { type: array, items: { type: string } }
+        items: { type: array, items: { $ref: "#/components/schemas/AuditEvent" } }
+    AuditVerify:
+      type: object
+      properties:
+        id: { type: string }
+        verified: { type: boolean }
+        hash: { type: string }
+        prev_hash: { type: string }
+        signers: { type: array, items: { type: string } }
+        ork_nodes: { type: string }
+        signature: { type: string }
+        verified_at: { type: string, format: date-time }
+        method: { type: string }
+    Receipt:
+      type: object
+      properties:
+        incident_id: { type: string }
+        title: { type: string }
+        generated_at: { type: string, format: date-time }
+        summary:
+          type: object
+          properties:
+            who: { type: array, items: { type: string } }
+            what: { type: string }
+            when: { type: string }
+            mttr_min: { type: integer }
+        approvals:
+          type: array
+          items:
+            type: object
+            properties:
+              request_id: { type: string }
+              approver: { type: string }
+              display_name: { type: string }
+              signed_at: { type: string, format: date-time }
+              signature: { type: string }
+        data_accessed:
+          type: object
+          properties:
+            record_ids: { type: array, items: { type: string } }
+            fields: { type: array, items: { type: string } }
+            granted_min: { type: integer }
+            actual_use: { type: string }
+        blocked_attempts:
+          type: array
+          items:
+            type: object
+            properties:
+              request_id: { type: string }
+              actor: { type: string }
+              what: { type: string }
+              tier: { $ref: "#/components/schemas/Tier" }
+        signatures:
+          type: array
+          items:
+            type: object
+            properties:
+              event: { type: string }
+              hash: { type: string }
+              signature: { type: string }
+        footer: { type: string }

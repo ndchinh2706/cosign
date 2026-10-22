@@ -1,0 +1,39 @@
+{
+  "items": [
+    {
+      "id": "mrc_8812",
+      "tag": "customer_pii",
+      "ciphertext": "MOCK-CIPHERTEXT-50cbca5d29f0d8f2267f7b9a576852b23f65d20fa381de68c474c0c0c9a5052250cbca5d29f0d8f2267f7b9a576852b23f65d20f",
+      "encrypted_by": "marcus.lee",
+      "encrypted_at": "2026-10-22T02:00:00+07:00"
+    },
+    {
+      "id": "mrc_8830",
+      "tag": "customer_pii",
+      "ciphertext": "MOCK-CIPHERTEXT-d364c4b9c73ff8501864f6bbdf42fafe5a43229c5ee08967524cd4b3e9b2ac40d364c4b9c73ff8501864f6bbdf42fafe5a43229c",
+      "encrypted_by": "marcus.lee",
+      "encrypted_at": "2026-10-22T02:00:00+07:00"
+    },
+    {
+      "id": "mrc_8841",
+      "tag": "customer_pii",
+      "ciphertext": "MOCK-CIPHERTEXT-03b8b78727518b70fd8eeb7f420041e396d0ee0bbea4cbe6e4236c2fe75bafd103b8b78727518b70fd8eeb7f420041e396d0ee0b",
+      "encrypted_by": "marcus.lee",
+      "encrypted_at": "2026-10-22T02:00:00+07:00"
+    },
+    {
+      "id": "mrc_8857",
+      "tag": "customer_pii",
+      "ciphertext": "MOCK-CIPHERTEXT-fb4396065e0c7eacca9502791d0b7b31f42c59267e0ac7f316ce058af565e38dfb4396065e0c7eacca9502791d0b7b31f42c5926",
+      "encrypted_by": "marcus.lee",
+      "encrypted_at": "2026-10-22T02:00:00+07:00"
+    },
+    {
+      "id": "mrc_8863",
+      "tag": "customer_pii",
+      "ciphertext": "MOCK-CIPHERTEXT-0c1ddc020ac8b52850775078a53c0f877c1323854109b8320a3997bcdd8b2c640c1ddc020ac8b52850775078a53c0f877c132385",
+      "encrypted_by": "marcus.lee",
+      "encrypted_at": "2026-10-22T02:00:00+07:00"
+    }
+  ]
+}

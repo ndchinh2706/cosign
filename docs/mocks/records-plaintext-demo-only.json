@@ -1,0 +1,130 @@
+{
+  "note": "Chỉ để frontend render A5 ở mock mode. Ở live mode plaintext chỉ tồn tại sau IAMService.doDecrypt trong tab trình duyệt.",
+  "items": [
+    {
+      "id": "mrc_8812",
+      "name": "Saigon Brew Co.",
+      "settlement_bank": "Vietcombank ****4021",
+      "tax_id": "0312****88",
+      "payout_currency": "VND",
+      "payout_currency_prev": "EUR",
+      "last_tx": [
+        {
+          "id": "tx_8812a1",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_8812a0",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_88129f",
+          "status": "settled"
+        }
+      ],
+      "anomaly": "payout currency changed EUR→VND by config in v413"
+    },
+    {
+      "id": "mrc_8830",
+      "name": "Lotus Travel",
+      "settlement_bank": "Techcombank ****7730",
+      "tax_id": "0301****52",
+      "payout_currency": "VND",
+      "payout_currency_prev": "EUR",
+      "last_tx": [
+        {
+          "id": "tx_8830a1",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_8830a0",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_88309f",
+          "status": "settled"
+        }
+      ],
+      "anomaly": "payout currency changed EUR→VND by config in v413"
+    },
+    {
+      "id": "mrc_8841",
+      "name": "Mekong Textiles",
+      "settlement_bank": "BIDV ****1184",
+      "tax_id": "1801****07",
+      "payout_currency": "VND",
+      "payout_currency_prev": "EUR",
+      "last_tx": [
+        {
+          "id": "tx_8841a1",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_8841a0",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_88419f",
+          "status": "settled"
+        }
+      ],
+      "anomaly": "payout currency changed EUR→VND by config in v413"
+    },
+    {
+      "id": "mrc_8857",
+      "name": "Hanoi Pixel Studio",
+      "settlement_bank": "VPBank ****9902",
+      "tax_id": "0108****61",
+      "payout_currency": "VND",
+      "payout_currency_prev": "EUR",
+      "last_tx": [
+        {
+          "id": "tx_8857a1",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_8857a0",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_88579f",
+          "status": "settled"
+        }
+      ],
+      "anomaly": "payout currency changed EUR→VND by config in v413"
+    },
+    {
+      "id": "mrc_8863",
+      "name": "Pho & Co.",
+      "settlement_bank": "ACB ****3350",
+      "tax_id": "0314****19",
+      "payout_currency": "VND",
+      "payout_currency_prev": "EUR",
+      "last_tx": [
+        {
+          "id": "tx_8863a1",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_8863a0",
+          "status": "failed",
+          "reason": "currency_mismatch"
+        },
+        {
+          "id": "tx_88639f",
+          "status": "settled"
+        }
+      ],
+      "anomaly": "payout currency changed EUR→VND by config in v413"
+    }
+  ]
+}

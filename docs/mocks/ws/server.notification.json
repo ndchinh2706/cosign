@@ -1,0 +1,16 @@
+{
+  "v": 1,
+  "id": "evt_0108n",
+  "ts": "2026-10-22T03:13:10+07:00",
+  "type": "notification",
+  "channel": "user:linh.tran",
+  "payload": {
+    "id": "ntf_01",
+    "group": "approval",
+    "title": "Atlas requests customer_pii.selfdecrypt · 5 records · 15 min",
+    "request_id": "CR-0192",
+    "tier": "T2",
+    "approvals": 0,
+    "required": 2
+  }
+}

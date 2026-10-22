@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "id": "evt_0110",
+  "ts": "2026-10-22T03:13:00+07:00",
+  "type": "metrics.tick",
+  "channel": "incident:INC-2417",
+  "payload": {
+    "service": "payments-api",
+    "at": "03:13",
+    "error_rate": 0.19
+  }
+}

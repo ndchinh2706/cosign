@@ -1,0 +1,13 @@
+{
+  "id": "run_01",
+  "incident_id": "INC-2417",
+  "agent": "ai-oncall-agent",
+  "status": "running",
+  "mode": "llm",
+  "started_at": "2026-10-22T03:12:04+07:00",
+  "finished_at": null,
+  "context_flagged": false,
+  "context_quarantined": false,
+  "steps": [],
+  "ws_channel": "run:run_01"
+}

@@ -1,0 +1,44 @@
+{
+  "user": {
+    "username": "ai-oncall-agent",
+    "display_name": "Atlas",
+    "type": "agent",
+    "email": "ai-oncall-agent@northwind",
+    "avatar": "hexagon"
+  },
+  "roles": [
+    "agent",
+    "_tide_customer_pii.selfencrypt"
+  ],
+  "home": "/agent",
+  "authority": [
+    {
+      "capability": "services.restart",
+      "state": "allowed"
+    },
+    {
+      "capability": "deploy.rollback",
+      "state": "allowed"
+    },
+    {
+      "capability": "logs.read",
+      "state": "allowed"
+    },
+    {
+      "capability": "customer_pii.selfdecrypt",
+      "state": "locked",
+      "tide_role": "_tide_customer_pii.selfdecrypt"
+    },
+    {
+      "capability": "roles.grant",
+      "state": "locked",
+      "reason": "never grantable to agents"
+    },
+    {
+      "capability": "secrets.rotate",
+      "state": "locked"
+    }
+  ],
+  "open_requests": 0,
+  "context_flagged": false
+}

@@ -1,0 +1,28 @@
+{
+  "service": "payments-api",
+  "items": [
+    {
+      "version": "v411",
+      "service": "payments-api",
+      "status": "superseded",
+      "deployed_at": "2026-10-21T14:20:00+07:00",
+      "note": "fee rounding fix"
+    },
+    {
+      "version": "v412",
+      "service": "payments-api",
+      "status": "active",
+      "deployed_at": "2026-10-21T22:10:00+07:00",
+      "note": "stable"
+    },
+    {
+      "version": "v413",
+      "service": "payments-api",
+      "status": "rolled_back",
+      "deployed_at": "2026-10-22T03:05:00+07:00",
+      "note": "merchant payout currency migration (bad)",
+      "rolled_back_at": "2026-10-22T03:12:21+07:00",
+      "rolled_back_by": "ai-oncall-agent"
+    }
+  ]
+}
