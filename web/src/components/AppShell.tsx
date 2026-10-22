@@ -16,6 +16,9 @@ import { API_MODE } from '@/lib/config'
 type Incident = { id: string; service: string; status: string; started_at: string; resolved_at: string | null }
 type Toast = { id: string; kind: string; title: string; body?: string }
 
+// Pages raise a toast without prop drilling: toast({ kind, title, body }).
+export const toast = (t: Omit<Toast, 'id'>) => window.dispatchEvent(new CustomEvent('cosign:toast', { detail: t }))
+
 const hhmm = (iso?: string | null) => (iso ? iso.slice(11, 16) : '')
 const TOAST_C: Record<string, string> = { ok: 'var(--ok)', refused: 'var(--refused)', warn: 'var(--pending)', pending: 'var(--pending)' }
 
@@ -75,7 +78,16 @@ export function AppShell({ children }: { children: ReactNode }) {
         setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== t.id)), 4800)
       }),
     ]
-    return () => offs.forEach((off) => off())
+    const local = (e: Event) => {
+      const t = { id: Math.random().toString(36).slice(2), ...(e as CustomEvent<Omit<Toast, 'id'>>).detail }
+      setToasts((ts) => [...ts, t].slice(-3))
+      setTimeout(() => setToasts((ts) => ts.filter((x) => x.id !== t.id)), 4800)
+    }
+    window.addEventListener('cosign:toast', local)
+    return () => {
+      offs.forEach((off) => off())
+      window.removeEventListener('cosign:toast', local)
+    }
   }, [on, demoUser, setIncident, setFeed])
 
   const approvals = feed?.groups.find((g) => g.id === 'approval')?.items.length ?? 0
@@ -145,7 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {API_MODE === 'mock' && <ReplayControls />}
       {drawer && feed && <NotificationsDrawer feed={feed} roles={me?.roles ?? []} onClose={() => setDrawer(false)} />}
 
-      <div style={{ position: 'fixed', top: 68, right: 16, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 8, width: 316 }} aria-live="polite">
+      <div style={{ position: 'fixed', bottom: 72, right: 16, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 8, width: 316 }} aria-live="polite">
         {toasts.map((t) => (
           <div key={t.id} className="card" onClick={() => setToasts((ts) => ts.filter((x) => x.id !== t.id))} style={{ display: 'flex', gap: 10, padding: '12px 14px', boxShadow: 'var(--shadow)', animation: 'cs-in 220ms ease', cursor: 'pointer' }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: TOAST_C[t.kind] ?? 'var(--accent)', marginTop: 5, flex: 'none' }} />
