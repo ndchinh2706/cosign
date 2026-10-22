@@ -353,6 +353,12 @@ const SEL = {
   },
 };
 
+// ?beat=N&theme=light&bar=0 opens straight on a beat, for review links and screenshots
+const q = new URLSearchParams(location.search);
+if (q.get('theme')) S.theme = q.get('theme');
+if (q.has('beat')) goBeat(+q.get('beat'));
+if (q.get('bar') === '0') S.demo = { ...S.demo, hidden: true };
+
 const Store = { getState: () => S, subscribe: f => { listeners.add(f); return () => listeners.delete(f); }, actions: A, sel: SEL, data: D, beats: BEATS };
 window.CosignStore = Store;
 window.dispatchEvent(new Event('cosign:ready'));

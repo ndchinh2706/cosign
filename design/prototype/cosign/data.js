@@ -1,6 +1,6 @@
 // Cosign — synthetic demo data. All names/IDs are fictional.
 export const PEOPLE = {
-  atlas: { id: 'atlas', name: 'Atlas', handle: 'ai-oncall-agent@northwind', role: 'AI on-call agent', agent: true, initials: 'AT', color: '#B48CFF' },
+  atlas: { id: 'atlas', name: 'Atlas', handle: 'ai-oncall-agent@northwind', role: 'AI on-call agent', agent: true, initials: 'AT', color: '#A9A9B0' },
   linh: { id: 'linh', name: 'Linh Tran', handle: 'linh.tran@northwind', role: 'On-call SRE', agent: false, initials: 'LT', color: '#6FA8FF' },
   marcus: { id: 'marcus', name: 'Marcus Lee', handle: 'marcus.lee@northwind', role: 'Security Lead', agent: false, initials: 'ML', color: '#3DD6C4' },
   dave: { id: 'dave', name: 'Dave Kim', handle: 'dave.kim@northwind', role: 'Platform Admin', agent: false, initials: 'DK', color: '#F59E6C' },
