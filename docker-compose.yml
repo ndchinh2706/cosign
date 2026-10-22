@@ -1,0 +1,50 @@
+# Full stack. Mock-only dev does not need this file (see README "Run locally").
+services:
+  tidecloak:
+    # Params per https://docs.tide.org/get-started/Tidecloak%20Quickstart (docker run example).
+    image: tideorg/tidecloak-dev:latest
+    ports:
+      - "8080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:-password}
+    volumes:
+      # Quickstart mounts the host cwd at /opt/keycloak/data/h2; a named volume does the same job.
+      - tidecloak-data:/opt/keycloak/data/h2
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      TIDECLOAK_URL: http://tidecloak:8080
+      DB_PATH: /data/cosign.db
+      MOCKS_DIR: /app/mocks
+    volumes:
+      - api-data:/data
+    depends_on:
+      - tidecloak
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_MODE: ${NEXT_PUBLIC_API_MODE:-live}
+        NEXT_PUBLIC_TIDE_MODE: ${NEXT_PUBLIC_TIDE_MODE:-live}
+        # Browser-side URLs: the browser reaches the host ports, not the compose network.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api/v1}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000/ws}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  tidecloak-data:
+  api-data:
