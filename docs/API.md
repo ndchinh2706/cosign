@@ -58,6 +58,9 @@ Nguyên tắc cứng:
 | `TIDECLOAK_URL` | `http://tidecloak:8080` | base URL |
 | `TIDECLOAK_REALM` | `cosign` | |
 | `JWKS_URL` | `${TIDECLOAK_URL}/realms/cosign/protocol/openid-connect/certs` | **CẦN KIỂM CHỨNG** alg (có thể `EdDSA`); dùng `PyJWT[crypto]` với `algorithms=["EdDSA","RS256","ES256"]`, tắt verify `aud` hoặc đặt `aud=account` |
+| `JWT_ISSUER` | `${TIDECLOAK_URL}/realms/${TIDECLOAK_REALM}` | `iss` mong đợi; đặt lại khi api gọi TideCloak qua host khác với URL trình duyệt thấy (vd `http://localhost:8080/realms/cosign`) |
+| `TIDECLOAK_CLIENT_ID` | `cosign-web` | token phải có giá trị này trong `aud` hoặc `azp` |
+| `JWT_VERIFY_AUD` | `true` | `false` để bỏ kiểm aud/azp nếu token Tide không set |
 | `AUTH_MODE` | `tide` | `tide` = verify JWT thật; `dev` = chấp nhận header `X-Demo-User: linh.tran` (chỉ để frontend/backend dev song song, tắt khi demo) |
 | `GOVERNANCE_MODE` | `mock` | `real` = gọi TideCloak change request; `mock` = FastAPI mô phỏng |
 | `SCAN_MODE` | `heuristic` | `model` = model C1 đã train; `heuristic` = regex đa ngôn ngữ |
@@ -153,7 +156,7 @@ Luật tính tier khi tạo request: `tier = capability_tier[cap]`; nếu `run.c
 
 - Browser đăng nhập TideCloak qua SDK (`npm init @tidecloak/nextjs`), lấy access token bằng `getToken()`.
 - Mọi REST: header `Authorization: Bearer <jwt>`. WS: message `auth` đầu tiên (xem §6).
-- FastAPI verify chữ ký qua JWKS (`JWKS_URL`), cache key 10 phút. Đọc user từ `preferred_username`, role từ `realm_access.roles` — **CẦN KIỂM CHỨNG** role Tide `_tide_customer_pii.*` nằm ở `realm_access.roles` hay `resource_access.<client>.roles`; `hasRealmRole()`/`hasClientRole()` của SDK gợi ý cả hai. Tắt DPoP.
+- FastAPI verify chữ ký qua JWKS (`JWKS_URL`), cache key 10 phút. Kiểm `iss`, `exp`, `aud`/`azp`. Đọc user từ `preferred_username`, role gộp từ `realm_access.roles` và `resource_access.*.roles`; kid lạ thì refetch JWKS — **CẦN KIỂM CHỨNG** role Tide `_tide_customer_pii.*` nằm ở `realm_access.roles` hay `resource_access.<client>.roles`; `hasRealmRole()`/`hasClientRole()` của SDK gợi ý cả hai. Tắt DPoP.
 - `AUTH_MODE=dev`: header `X-Demo-User: <username>` thay JWT, FastAPI tra role trong seed. Chỉ cho dev.
 - Role gate ghi ở mỗi endpoint. Lỗi chung: `401 unauthenticated`, `403 forbidden`.
 

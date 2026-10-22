@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     tidecloak_url: str = "http://tidecloak:8080"
     tidecloak_realm: str = "cosign"
     jwks_url: str = ""
+    jwt_issuer: str = ""
+    tidecloak_client_id: str = "cosign-web"
+    jwt_verify_aud: bool = True
 
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-5-5"
@@ -39,6 +42,10 @@ class Settings(BaseSettings):
         return self.jwks_url or (
             f"{self.tidecloak_url}/realms/{self.tidecloak_realm}/protocol/openid-connect/certs"
         )
+
+    @property
+    def effective_issuer(self) -> str:
+        return self.jwt_issuer or f"{self.tidecloak_url}/realms/{self.tidecloak_realm}"
 
     @property
     def effective_agent_mode(self) -> str:

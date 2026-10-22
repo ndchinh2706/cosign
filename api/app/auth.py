@@ -1,12 +1,14 @@
 from dataclasses import dataclass, field
-from functools import lru_cache
+import time
 
+import httpx
 import jwt
 from fastapi import Depends, Request
 
 from .config import Settings, get_settings
 from .errors import ApiError
 
+ALLOWED_ALGS = ["EdDSA", "RS256", "ES256"]
 ROLE_ALIASES = {"security": "security-lead", "admin": "platform-admin"}
 
 
@@ -47,23 +49,57 @@ HOME_BY_ROLE = [("agent", "/agent"), ("security-lead", "/governance"), ("oncall"
                 ("platform-admin", "/admin/users"), ("compliance", "/audit")]
 
 
-@lru_cache
-def _jwks_client(url: str) -> jwt.PyJWKClient:
-    return jwt.PyJWKClient(url, cache_keys=True, lifespan=600)
+_JWKS_CACHE: dict[str, tuple[float, dict[str, dict]]] = {}
+_JWKS_TTL_S = 600
+_JWKS_MIN_REFETCH_S = 10
+
+
+def _fetch_jwks(url: str) -> list[dict]:
+    r = httpx.get(url, timeout=5.0)
+    r.raise_for_status()
+    return r.json().get("keys", [])
+
+
+def _signing_key(url: str, kid: str | None):
+    now = time.monotonic()
+    fetched_at, keys = _JWKS_CACHE.get(url, (0.0, {}))
+    stale = now - fetched_at > _JWKS_TTL_S
+    unknown = kid not in keys and now - fetched_at > _JWKS_MIN_REFETCH_S
+    if stale or unknown:
+        try:
+            keys = {k.get("kid"): k for k in _fetch_jwks(url)}
+        except (httpx.HTTPError, ValueError) as e:
+            raise ApiError(503, "tide_unavailable", f"cannot fetch JWKS: {e}") from e
+        _JWKS_CACHE[url] = (now, keys)
+    jwk = keys.get(kid) if kid else (next(iter(keys.values()), None) if len(keys) == 1 else None)
+    if jwk is None:
+        raise ApiError(401, "unauthenticated", "invalid token: unknown signing key")
+    return jwt.PyJWK(jwk).key
 
 
 def verify_token(token: str, settings: Settings) -> User:
-    # TODO #14: confirm alg + where Tide puts _tide_* roles (realm_access vs resource_access) against a live TideCloak.
     try:
-        key = _jwks_client(settings.effective_jwks_url).get_signing_key_from_jwt(token)
-        claims = jwt.decode(token, key.key, algorithms=["EdDSA", "RS256", "ES256"],
-                            options={"verify_aud": False})
+        header = jwt.get_unverified_header(token)
+        if header.get("alg") not in ALLOWED_ALGS:
+            raise jwt.InvalidAlgorithmError(f"alg {header.get('alg')} not allowed")
+        key = _signing_key(settings.effective_jwks_url, header.get("kid"))
+        claims = jwt.decode(token, key, algorithms=ALLOWED_ALGS, issuer=settings.effective_issuer,
+                            options={"verify_aud": False, "require": ["exp", "iss"]})
+        client = settings.tidecloak_client_id
+        if settings.jwt_verify_aud and client:
+            aud = claims.get("aud") or []
+            aud = [aud] if isinstance(aud, str) else aud
+            if client not in aud and claims.get("azp") != client:
+                raise jwt.InvalidAudienceError("token not issued for this client")
     except jwt.PyJWTError as e:
         raise ApiError(401, "unauthenticated", f"invalid token: {e}") from e
     username = claims.get("preferred_username", "")
+    if not username:
+        raise ApiError(401, "unauthenticated", "invalid token: no preferred_username")
     roles = list(claims.get("realm_access", {}).get("roles", []))
-    for client in claims.get("resource_access", {}).values():
-        roles += client.get("roles", [])
+    for client_access in claims.get("resource_access", {}).values():
+        roles += client_access.get("roles", [])
+    roles = list(dict.fromkeys(roles))
     seed = SEED_USERS.get(username)
     home = next((h for r, h in HOME_BY_ROLE if r in roles), "/")
     return User(username, seed.display_name if seed else username,
