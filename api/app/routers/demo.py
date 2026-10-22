@@ -21,7 +21,7 @@ async def reset(request: Request, payload: dict | None = Body(default=None), db=
     wipe = bool((payload or {}).get("wipe_records", False))
     payments.reset(db, wipe_records=wipe)
     app = request.app
-    seeding.reset(db, app.state.settings.mocks_dir, app.state.governance, seed_roles())
+    seeding.reset(db, app.state.settings.mocks_dir, app.state.governance, seed_roles(), records=not wipe and app.state.settings.seed_sample_records)
     app.state.clock_offset_min = 0
     row = payments.list_incidents(db)["items"][0]
     await app.state.hub.publish(f"incident:{payments.INCIDENT_ID}", "incident.updated",

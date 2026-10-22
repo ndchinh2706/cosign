@@ -1,8 +1,8 @@
 'use client'
 
 import { useTideCloak } from '@tidecloak/nextjs'
-import { loadMock } from './api'
-import { TIDE_MODE } from './config'
+import { apiGet, loadMock } from './api'
+import { API_MODE, TIDE_MODE } from './config'
 import { findUser, getDemoUser } from './users'
 
 // Signatures follow docs/API.md §6.4 / docs/SCREENS.md (IAMService.doEncrypt / doDecrypt).
@@ -36,10 +36,22 @@ const b64 = (s: string) => btoa(String.fromCharCode(...new TextEncoder().encode(
 const unb64 = (s: string) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)))
 const mockRoles = () => findUser(getDemoUser())?.roles ?? []
 
+type Authority = { capability: string; state: string; expires_at?: string }
+
+// Live API: the server's authority is the source of truth, re-read on every decrypt so a quorum grant applies at once.
+async function canSelfDecrypt(tag: string): Promise<boolean> {
+  if (API_MODE !== 'live') return mockRoles().includes(selfDecryptRole(tag))
+  const me = await apiGet<{ authority?: Authority[] }>(`/me?as=${getDemoUser()}`)
+  const a = me.authority?.find((x) => x.capability === `${tag}.selfdecrypt`)
+  if (!a) return false
+  if (a.state === 'allowed') return true
+  return a.state === 'granted' && (!a.expires_at || Date.parse(a.expires_at) > Date.now())
+}
+
 async function mockDecrypt(items: DecryptItem[]): Promise<string[]> {
   for (const it of items) {
     for (const tag of it.tags) {
-      if (!mockRoles().includes(selfDecryptRole(tag))) throw new TideRefusedError(selfDecryptRole(tag))
+      if (!(await canSelfDecrypt(tag))) throw new TideRefusedError(selfDecryptRole(tag))
     }
   }
   // Seeded mock ciphertexts map back to records-plaintext-demo-only.json; our own mock output is base64.
