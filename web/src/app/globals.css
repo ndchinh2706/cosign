@@ -299,3 +299,10 @@ input:focus-visible {
 .stream > * {
   flex-shrink: 0;
 }
+
+/* Mid widths: the top bar keeps the incident, role switcher and controls. */
+@media (max-width: 1100px) {
+  .wide {
+    display: none !important;
+  }
+}

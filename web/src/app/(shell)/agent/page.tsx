@@ -36,8 +36,13 @@ export default function AgentConsole() {
   const { data: snapshot } = useApi<Run>(runId ? `/agent/runs/${runId}` : null)
   const { data: metrics } = useApi<Metrics>('/incidents/INC-2417/metrics')
   const { data: incident } = useApi<{ error_rate: number }>('/incidents/INC-2417')
-  const { data: incidentReqs } = useApi<{ items: Request[] }>(API_MODE === 'live' ? '/requests?incident=INC-2417' : null)
-  const base = useMemo<ConsoleState>(() => ({ run: snapshot, authority: me?.authority ?? [], errorRate: incident?.error_rate, requests: {} }), [snapshot, me, incident])
+  const { data: incidentReqs } = useApi<{ items: Request[] }>('/requests?incident=INC-2417')
+  // Mock beat 0 is the run snapshot: seed the requests its steps already reference.
+  const base = useMemo<ConsoleState>(() => {
+    const ids = new Set((snapshot?.steps ?? []).map((s) => String(s.output?.request_id ?? '')))
+    const requests = API_MODE === 'mock' ? Object.fromEntries((incidentReqs?.items ?? []).filter((r) => ids.has(r.id)).map((r) => [r.id, r])) : {}
+    return { run: snapshot, authority: me?.authority ?? [], errorRate: incident?.error_rate, requests }
+  }, [snapshot, me, incident, incidentReqs])
   const mockState = useMockConsole(base)
   const [liveState, setLiveState] = useState<ConsoleState>(base)
   const [plain, setPlain] = useState<PlainRecord[] | null>(null)

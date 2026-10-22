@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { Icon, IdentityChip, QuorumSeal, RiskChip, type ICONS } from '@/components/ui'
+import { API_MODE } from '@/lib/config'
 import { useApi } from '@/lib/api'
 import { useRequests } from '@/lib/requests'
 import { useCosignSocket } from '@/lib/ws'
@@ -21,13 +22,18 @@ const age = (s?: number) => (s == null ? '' : s < 3600 ? `${Math.max(1, Math.rou
 // L1: the security lead's question is "what is trying to gain authority right now?"
 export default function Governance() {
   const { data: ov, mutate: reOv } = useApi<Overview>('/governance/overview')
-  const { data: map, mutate: reMap } = useApi<AuthMap>('/governance/authority-map')
+  const { data: map, mutate: reMap, setData: setMap } = useApi<AuthMap>('/governance/authority-map')
   const { on } = useCosignSocket(['role:security-lead'])
   useEffect(() => {
-    const r = () => { reOv(); reMap() }
+    const r = () => { reOv(); if (API_MODE === 'live') reMap() }
     const offs = ['authority.updated', 'injection.detected', 'request.created', 'request.updated'].map((t) => on(t, r))
+    // Mock GETs are static, so patch the identity's cells from the event itself.
+    offs.push(on('authority.updated', (e) => {
+      const p = e.payload as { user: string; authority?: { capability: string; state: AuthMap['identities'][number]['cells'][string] }[] }
+      if (p.authority) setMap((m) => m && { ...m, identities: m.identities.map((i) => (i.username === p.user ? { ...i, cells: { ...i.cells, ...Object.fromEntries(p.authority!.map((a) => [a.capability, a.state])) } } : i)) })
+    }))
     return () => offs.forEach((f) => f())
-  }, [on, reOv, reMap])
+  }, [on, reOv, reMap, setMap])
   const { data: reqs } = useRequests()
   const queue = (reqs?.items ?? []).filter((r) => r.status === 'pending')
   const s = ov?.stats

@@ -124,7 +124,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <header className="topbar">
-          <div className="desk" style={{ display: 'flex', alignItems: 'baseline', gap: 8, whiteSpace: 'nowrap' }}>
+          <div className="desk wide" style={{ display: 'flex', alignItems: 'baseline', gap: 8, whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: 14, fontWeight: 600 }}>Northwind Pay</span>
             <span className="mono muted" style={{ fontSize: 12 }}>northwind-prod</span>
           </div>
@@ -137,7 +137,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <span className="muted desk">· {hhmm(resolved ? incident.resolved_at : incident.started_at)}</span>
             </Link>
           )}
-          <div className="desk card" style={{ flex: '0 1 200px', height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', color: 'var(--text-muted)' }}>
+          <div className="desk wide card" style={{ flex: '0 1 200px', height: 32, display: 'flex', alignItems: 'center', gap: 8, padding: '0 10px', color: 'var(--text-muted)' }}>
             <Icon name="search" size={14} />
             <span style={{ flex: 1 }}>Search</span>
             <span style={{ fontSize: 12, border: '1px solid var(--border)', borderRadius: 4, padding: '0 5px' }}>⌘K</span>
